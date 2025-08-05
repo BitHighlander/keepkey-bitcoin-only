@@ -317,6 +317,9 @@ jobs:
           name: ${{ matrix.name }}-artifacts
           path: |
             projects/vault-v2/src-tauri/target/release/bundle/
+            projects/vault-v2/src-tauri/target/universal-apple-darwin/release/bundle/
+            projects/vault-v2/src-tauri/target/x86_64-apple-darwin/release/bundle/
+            projects/vault-v2/src-tauri/target/aarch64-apple-darwin/release/bundle/
           retention-days: 7
 
       - name: Build summary
