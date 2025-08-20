@@ -19,9 +19,8 @@ import {
   IconButton,
   Switch,
   Alert,
-  AlertIcon,
 } from '@chakra-ui/react';
-import { LuX, LuShield, LuKey, LuCheckCircle } from 'react-icons/lu';
+import { LuX, LuShield, LuKey } from 'react-icons/lu';
 import { FaCheckCircle } from 'react-icons/fa';
 import { invoke } from '@tauri-apps/api/core';
 import { useTypedTranslation } from '../hooks/useTypedTranslation';
@@ -60,7 +59,7 @@ const STEPS: Step[] = [
     id: 'complete',
     label: 'Complete',
     description: 'Your device security is configured',
-    icon: LuCheckCircle,
+    icon: FaCheckCircle,
   },
 ];
 
@@ -138,7 +137,7 @@ export const AuthSetupDialog = ({
         </DialogHeader>
 
         <DialogBody>
-          <VStack spacing={6} py={4}>
+          <VStack gap={6} py={4}>
             {/* Progress Bar */}
             <Box w="full">
               <Box 
@@ -158,7 +157,7 @@ export const AuthSetupDialog = ({
             </Box>
 
             {/* Step Indicators */}
-            <HStack spacing={4} justify="center">
+            <HStack gap={4} justify="center">
               {STEPS.map((step, index) => (
                 <Flex key={step.id} align="center">
                   <Box
@@ -198,7 +197,7 @@ export const AuthSetupDialog = ({
             </HStack>
 
             {/* Current Step Content */}
-            <VStack spacing={4} w="full" minH="300px">
+            <VStack gap={4} w="full" minH="300px">
               <Icon as={currentStepData.icon} boxSize={16} color="green.500" />
               <Text fontSize="xl" fontWeight="bold">
                 {currentStepData.label}
@@ -209,11 +208,11 @@ export const AuthSetupDialog = ({
 
               {/* Step-specific content */}
               {currentStep === 0 && (
-                <VStack spacing={4} w="full">
-                  <Alert status="info">
-                    <AlertIcon />
+                <VStack gap={4} w="full">
+                  <Alert.Root status="info">
+                    <Alert.Indicator />
                     Your PIN will be required to unlock your device and confirm transactions
-                  </Alert>
+                  </Alert.Root>
                   {!pinComplete && (
                     <Button
                       colorScheme="green"
@@ -229,7 +228,7 @@ export const AuthSetupDialog = ({
                   )}
                   {pinComplete && (
                     <HStack>
-                      <Icon as={LuCheckCircle} color="green.500" />
+                      <Icon as={FaCheckCircle} color="green.500" />
                       <Text color="green.500">PIN configured successfully</Text>
                     </HStack>
                   )}
@@ -237,43 +236,46 @@ export const AuthSetupDialog = ({
               )}
 
               {currentStep === 1 && (
-                <VStack spacing={4} w="full">
-                  <Alert status="warning">
-                    <AlertIcon />
+                <VStack gap={4} w="full">
+                  <Alert.Root status="warning">
+                    <Alert.Indicator />
                     Passphrases create hidden wallets. Each passphrase accesses a different wallet. 
                     Never forget your passphrase!
-                  </Alert>
+                  </Alert.Root>
                   <HStack justify="space-between" w="full" p={4} bg="gray.50" borderRadius="md">
-                    <VStack align="start" spacing={1}>
+                    <VStack align="start" gap={1}>
                       <Text fontWeight="bold">Enable Passphrase Protection</Text>
                       <Text fontSize="sm" color="gray.600">
                         Add an extra layer of security
                       </Text>
                     </VStack>
-                    <Switch
-                      isChecked={passphraseEnabled}
-                      onChange={(e) => setPassphraseEnabled(e.target.checked)}
-                      colorScheme="green"
+                    <Switch.Root
+                      checked={passphraseEnabled}
+                      onCheckedChange={() => setPassphraseEnabled(prev => !prev)}
+                      colorPalette="green"
                       size="lg"
-                    />
+                    >
+                      <Switch.HiddenInput />
+                      <Switch.Control />
+                    </Switch.Root>
                   </HStack>
                 </VStack>
               )}
 
               {currentStep === 2 && (
-                <VStack spacing={4}>
+                <VStack gap={4}>
                   <Icon as={FaCheckCircle} boxSize={20} color="green.500" />
                   <Text fontSize="lg" fontWeight="bold" color="green.500">
                     Security Setup Complete!
                   </Text>
-                  <VStack spacing={2} align="start">
+                  <VStack gap={2} align="start">
                     <HStack>
-                      <Icon as={LuCheckCircle} color="green.500" />
+                      <Icon as={FaCheckCircle} color="green.500" />
                       <Text>PIN protection enabled</Text>
                     </HStack>
                     {passphraseEnabled && (
                       <HStack>
-                        <Icon as={LuCheckCircle} color="green.500" />
+                        <Icon as={FaCheckCircle} color="green.500" />
                         <Text>Passphrase protection enabled</Text>
                       </HStack>
                     )}
@@ -282,29 +284,29 @@ export const AuthSetupDialog = ({
               )}
 
               {error && (
-                <Alert status="error">
-                  <AlertIcon />
+                <Alert.Root status="error">
+                  <Alert.Indicator />
                   {error}
-                </Alert>
+                </Alert.Root>
               )}
             </VStack>
           </VStack>
         </DialogBody>
 
         <DialogFooter>
-          <HStack spacing={3}>
+          <HStack gap={3}>
             <Button
               variant="outline"
               onClick={handlePrevious}
-              isDisabled={currentStep === 0 || isLoading}
+              disabled={currentStep === 0 || isLoading}
             >
               Back
             </Button>
             <Button
               colorScheme="green"
               onClick={handleNext}
-              isLoading={isLoading}
-              isDisabled={currentStep === 0 && !pinComplete}
+              loading={isLoading}
+              disabled={currentStep === 0 && !pinComplete}
             >
               {currentStep === STEPS.length - 1 ? 'Finish' : 'Next'}
             </Button>

@@ -1,12 +1,14 @@
 import { VStack, Text, Icon, Box } from "@chakra-ui/react";
 import { FaBitcoin } from "react-icons/fa";
 import { useEffect } from "react";
+import { useTypedTranslation } from "../../../hooks/useTypedTranslation";
 
 interface Step0WelcomeProps {
   onNext: () => void;
 }
 
 export function Step0Welcome({ onNext }: Step0WelcomeProps) {
+  const { t } = useTypedTranslation('setup');
   // Auto-advance after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,18 +31,18 @@ export function Step0Welcome({ onNext }: Step0WelcomeProps) {
       
       <VStack gap={3}>
         <Text fontSize="3xl" fontWeight="bold" color="white">
-          Welcome to KeepKey
+          {t('welcome.title')}
         </Text>
         <Text fontSize="xl" color="orange.500">
-          Bitcoin-Only Edition
+          {t('welcome.subtitle')}
         </Text>
         <Text fontSize="md" color="gray.400" maxW="400px">
-          The secure hardware wallet focused exclusively on Bitcoin
+          {t('welcome.description')}
         </Text>
       </VStack>
 
       <Text fontSize="sm" color="gray.500">
-        Setting up your device...
+        {t('welcome.settingUp')}
       </Text>
     </VStack>
   );

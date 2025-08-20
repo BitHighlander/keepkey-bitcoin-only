@@ -214,6 +214,7 @@
       "warning": "Warning: Removing PIN will make your device less secure",
       "confirm": "Are you sure you want to remove PIN protection?",
       "enterCurrent": "Enter current PIN to confirm",
+      "instructionOnComputer": "Enter your current PIN on the computer to disable PIN protection",
       "success": "PIN removed successfully",
       "failed": "Failed to remove PIN",
       "buttons": {

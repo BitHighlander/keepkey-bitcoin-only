@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTypedTranslation } from "../../hooks/useTypedTranslation";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -65,6 +66,7 @@ export function RecoveryFlow({
   onError, 
   onBack 
 }: RecoveryFlowProps) {
+  const { t } = useTypedTranslation('setup');
   const [state, setState] = useState<RecoveryState>('initializing');
   const [session, setSession] = useState<RecoverySession | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -289,6 +291,25 @@ export function RecoveryFlow({
       }
     }
   }, [currentChar, state]);
+
+  // Ensure Enter advances even when no input is focused (e.g., after 4th char)
+  useEffect(() => {
+    if (state !== 'phrase-entry') return;
+    const onKeyDownCapture = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || isProcessing) return;
+      e.preventDefault();
+      // Stop other global handlers
+      (e as any).stopImmediatePropagation?.();
+      e.stopPropagation();
+      if (currentWord < wordCount - 1) {
+        void handleNextWord();
+      } else {
+        void handleRecoveryComplete();
+      }
+    };
+    window.addEventListener('keydown', onKeyDownCapture, true);
+    return () => window.removeEventListener('keydown', onKeyDownCapture, true);
+  }, [state, isProcessing, currentWord, wordCount]);
 
   // Clear character inputs when moving to next word or starting phrase entry
   useEffect(() => {
@@ -577,6 +598,14 @@ export function RecoveryFlow({
         event.preventDefault();
         handleDelete();
         break;
+      case 'Enter':
+        event.preventDefault();
+        if (currentWord < wordCount - 1) {
+          handleNextWord();
+        } else {
+          handleRecoveryComplete();
+        }
+        break;
       case 'ArrowLeft':
         event.preventDefault();
         if (index > 0) {
@@ -589,7 +618,6 @@ export function RecoveryFlow({
           inputRefs[index + 1]?.current?.focus();
         }
         break;
-      case 'Enter':
       case ' ':
         event.preventDefault();
         if (currentWord < wordCount - 1) {
@@ -711,13 +739,13 @@ export function RecoveryFlow({
     return (
       <VStack gap={6}>
         <Heading size="lg" textAlign="center">
-          {isConfirm ? 'Confirm Recovery PIN' : 'Create Recovery PIN'}
+          {isConfirm ? t('recovery.confirmRecoveryPin', 'Confirm Recovery PIN') : t('recovery.createRecoveryPin', 'Create Recovery PIN')}
         </Heading>
         
         <Text color="gray.400" textAlign="center">
           {isConfirm 
-            ? 'Re-enter your PIN to confirm it matches.'
-            : 'Create a PIN to secure your recovered wallet. Use the layout shown on your device.'}
+            ? t('recovery.reenterPinToConfirm', 'Re-enter your PIN to confirm it matches.')
+            : t('recovery.createPinInstructions', 'Create a PIN to secure your recovered wallet. Use the layout shown on your device.')}
         </Text>
         
         {/* PIN dots display */}
@@ -773,7 +801,7 @@ export function RecoveryFlow({
             flex={1}
             disabled={isProcessing || pinPositions.length === 0}
           >
-            Clear
+            {t('recovery.clear', 'Clear')}
           </Button>
           
           <Button
@@ -783,7 +811,7 @@ export function RecoveryFlow({
             flex={2}
             disabled={isProcessing || pinPositions.length === 0}
           >
-            {isProcessing ? 'Processing...' : isConfirm ? 'Confirm PIN' : 'Set PIN'}
+            {isProcessing ? t('recovery.processing', 'Processing...') : isConfirm ? t('recovery.confirmPin', 'Confirm PIN') : t('recovery.setPin', 'Set PIN')}
           </Button>
         </HStack>
       </VStack>
@@ -798,21 +826,21 @@ export function RecoveryFlow({
     return (
       <VStack gap={6}>
         <Heading size="lg" textAlign="center">
-          Enter Your Recovery Sentence
+          {t('recovery.enterYourRecoverySentence', 'Enter Your Recovery Sentence')}
         </Heading>
         
         <Text fontSize="sm" color="gray.400" textAlign="center">
-          Using the scrambled keyboard legend on your KeepKey, enter the first 4 letters of each word.
+          {t('recovery.enterInstructionsShort', 'Using the scrambled keyboard legend on your KeepKey, enter the first 4 letters of each word.')}
         </Text>
         
         {/* Progress */}
         <Box w="100%">
           <HStack justify="space-between" mb={2}>
             <Text fontSize="sm" color="gray.300">
-              Word {currentWord + 1} of {wordCount}
+              {t('recovery.wordOf', { defaultValue: 'Word {{current}} of {{total}}', current: currentWord + 1, total: wordCount })}
             </Text>
             <Text fontSize="sm" color="gray.300">
-              {Math.round(progressPercent)}% Complete
+              {t('recovery.percentComplete', { defaultValue: '{{percent}}% Complete', percent: Math.round(progressPercent) })}
             </Text>
           </HStack>
           <Box
@@ -871,7 +899,7 @@ export function RecoveryFlow({
           >
             <HStack gap={2}>
               <Icon as={FaBackspace} />
-              <Text>Delete</Text>
+              <Text>{t('recovery.delete', 'Delete')}</Text>
             </HStack>
           </Button>
           
@@ -882,8 +910,8 @@ export function RecoveryFlow({
             flex={2}
             disabled={isProcessing || !canProceed}
           >
-            {isProcessing ? "Processing..." : 
-             currentWord < wordCount - 1 ? "Next Word" : "Complete Recovery"}
+            {isProcessing ? t('recovery.processing', 'Processing...') : 
+             currentWord < wordCount - 1 ? t('recovery.nextWord', 'Next Word') : t('recovery.completeRecovery', 'Complete Recovery')}
           </Button>
         </HStack>
       </VStack>

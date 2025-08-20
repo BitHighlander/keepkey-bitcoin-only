@@ -203,6 +203,7 @@
       "warning": "Advertencia: Eliminar el PIN hará tu dispositivo menos seguro",
       "confirm": "¿Estás seguro de que quieres eliminar la protección con PIN?",
       "enterCurrent": "Ingresa el PIN actual para confirmar",
+      "instructionOnComputer": "Ingresa tu PIN actual en la computadora para desactivar la protección con PIN",
       "success": "PIN eliminado exitosamente",
       "failed": "Error al eliminar PIN",
       "buttons": {

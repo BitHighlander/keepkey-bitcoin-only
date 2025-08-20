@@ -1452,8 +1452,9 @@ pub fn evaluate_device_status(device_id: String, features: Option<&DeviceFeature
                 // Use explicit bootloader version if available
                 bl_version.clone()
             } else {
-                // For modern firmware without explicit bootloader version, assume it's recent enough
-                "2.1.4".to_string() // Assume recent bootloader if not specified
+                // For modern firmware without explicit bootloader version, we cannot assume it's up to date
+                // Treat as unknown so the UI can prompt for verification/update
+                "Unknown bootloader".to_string()
             }
         };
         
@@ -1463,7 +1464,7 @@ pub fn evaluate_device_status(device_id: String, features: Option<&DeviceFeature
             // Modern bootloaders (2.1.4) don't need bootloader updates - they need firmware updates
             current_bootloader_version.starts_with("1.")
         } else if current_bootloader_version == "Unknown bootloader" {
-            false // Can't determine, assume no update needed
+            true // Unknown bootloader version: require update to ensure device is on a safe version
         } else {
             match semver::Version::parse(&current_bootloader_version) {
                 Ok(current_ver) => {
@@ -3214,7 +3215,16 @@ pub struct SeedVerificationSession {
     pub pin_verified: bool,
 }
 
-// Global recovery sessions
+// Device alias information with TTL
+#[derive(Debug, Clone)]
+struct DeviceAliasInfo {
+    canonical_id: String,
+    created_at: std::time::Instant,
+    last_seen: std::time::Instant,
+    source: String, // "serial_reuse", "recovery", "bus_addr_change", etc.
+}
+
+// Global recovery sessions and device aliases
 lazy_static::lazy_static! {
     static ref RECOVERY_SESSIONS: Mutex<HashMap<String, RecoverySession>> = 
         Mutex::new(HashMap::new());
@@ -3222,7 +3232,8 @@ lazy_static::lazy_static! {
         Mutex::new(HashMap::new());
     static ref RECOVERY_DEVICE_FLOWS: Mutex<std::collections::HashSet<String>> =
         Mutex::new(std::collections::HashSet::new());
-    static ref RECOVERY_DEVICE_ALIASES: Mutex<HashMap<String, String>> = 
+    // General device alias map with TTL - replaces RECOVERY_DEVICE_ALIASES
+    static ref DEVICE_ALIASES: Mutex<HashMap<String, DeviceAliasInfo>> = 
         Mutex::new(HashMap::new());
 }
 
@@ -3296,16 +3307,20 @@ pub async fn start_device_recovery(
         if let Some(handle) = manager.get(&device_id) {
             handle.clone()
         } else {
-            // Find the device by ID
+            // Find the device by ID (use canonical resolution)
             let devices = keepkey_rust::features::list_connected_devices();
+            let canonical_id = get_canonical_device_id(&device_id);
             let device_info = devices
                 .iter()
-                .find(|d| d.unique_id == device_id)
+                .find(|d| {
+                    let d_canonical = get_canonical_device_id(&d.unique_id);
+                    d_canonical == canonical_id
+                })
                 .ok_or_else(|| {
                     // Clean up session on device not found
                     let mut sessions = RECOVERY_SESSIONS.lock().unwrap_or_else(|_| panic!("Failed to lock recovery sessions"));
                     sessions.remove(&session_id);
-                    format!("Device {} not found", device_id)
+                    format!("Device {} (canonical: {}) not found", device_id, canonical_id)
                 })?;
             
             // Spawn a new device worker
@@ -3800,16 +3815,20 @@ pub async fn start_seed_verification(
         if let Some(handle) = manager.get(&device_id) {
             handle.clone()
         } else {
-            // Find the device by ID
+            // Find the device by ID (use canonical resolution)
             let devices = keepkey_rust::features::list_connected_devices();
+            let canonical_id = get_canonical_device_id(&device_id);
             let device_info = devices
                 .iter()
-                .find(|d| d.unique_id == device_id)
+                .find(|d| {
+                    let d_canonical = get_canonical_device_id(&d.unique_id);
+                    d_canonical == canonical_id
+                })
                 .ok_or_else(|| {
                     // Clean up session on device not found
                     let mut sessions = VERIFICATION_SESSIONS.lock().unwrap_or_else(|_| panic!("Failed to lock verification sessions"));
                     sessions.remove(&session_id);
-                    format!("Device {} not found", device_id)
+                    format!("Device {} (canonical: {}) not found", device_id, canonical_id)
                 })?;
             
             // Spawn a new device worker
@@ -4004,28 +4023,61 @@ pub fn unmark_device_in_recovery_flow(device_id: &str) -> Result<(), String> {
     log::info!("Device {} removed from recovery flow", device_id);
     
     // Also clean up any aliases
-    if let Ok(mut aliases) = RECOVERY_DEVICE_ALIASES.lock() {
-        aliases.retain(|_, v| v != device_id);
+    if let Ok(mut aliases) = DEVICE_ALIASES.lock() {
+        aliases.retain(|_, info| info.canonical_id != *device_id);
     }
     
     Ok(())
 }
 
-/// Add device ID alias for recovery flow
-pub fn add_recovery_device_alias(alias_id: &str, canonical_id: &str) -> Result<(), String> {
-    let mut aliases = RECOVERY_DEVICE_ALIASES.lock()
-        .map_err(|_| "Failed to lock recovery device aliases".to_string())?;
-    aliases.insert(alias_id.to_string(), canonical_id.to_string());
-    log::info!("Added recovery device alias: {} -> {}", alias_id, canonical_id);
+/// Add device ID alias with source tracking
+pub fn add_device_alias(alias_id: &str, canonical_id: &str, source: &str) -> Result<(), String> {
+    let mut aliases = DEVICE_ALIASES.lock()
+        .map_err(|_| "Failed to lock device aliases".to_string())?;
+    
+    let now = std::time::Instant::now();
+    aliases.insert(alias_id.to_string(), DeviceAliasInfo {
+        canonical_id: canonical_id.to_string(),
+        created_at: now,
+        last_seen: now,
+        source: source.to_string(),
+    });
+    
+    log::info!("[ALIAS] Added device alias: {} -> {} (source: {})", alias_id, canonical_id, source);
+    
+    // Clean up old aliases (TTL = 90 seconds on Windows, 60 on others)
+    #[cfg(target_os = "windows")]
+    let ttl_secs = 90;
+    #[cfg(not(target_os = "windows"))]
+    let ttl_secs = 60;
+    
+    aliases.retain(|alias, info| {
+        let age = now.duration_since(info.created_at).as_secs();
+        if age > ttl_secs {
+            log::info!("[ALIAS] Removing expired alias: {} -> {} (age: {}s)", alias, info.canonical_id, age);
+            false
+        } else {
+            true
+        }
+    });
+    
     Ok(())
+}
+
+/// Add device ID alias for recovery flow (compatibility wrapper)
+pub fn add_recovery_device_alias(alias_id: &str, canonical_id: &str) -> Result<(), String> {
+    add_device_alias(alias_id, canonical_id, "recovery")
 }
 
 /// Get canonical device ID from alias
 pub fn get_canonical_device_id(device_id: &str) -> String {
-    if let Ok(aliases) = RECOVERY_DEVICE_ALIASES.lock() {
-        if let Some(canonical) = aliases.get(device_id) {
-            log::info!("Resolved device alias {} to canonical ID {}", device_id, canonical);
-            return canonical.clone();
+    if let Ok(mut aliases) = DEVICE_ALIASES.lock() {
+        if let Some(info) = aliases.get_mut(device_id) {
+            // Update last seen time when alias is used
+            info.last_seen = std::time::Instant::now();
+            log::info!("[ALIAS] Resolved device alias {} to canonical ID {} (source: {})", 
+                     device_id, info.canonical_id, info.source);
+            return info.canonical_id.clone();
         }
     }
     device_id.to_string()
@@ -4033,15 +4085,12 @@ pub fn get_canonical_device_id(device_id: &str) -> String {
 
 /// Check if two device IDs might be the same device
 pub fn are_devices_potentially_same(id1: &str, id2: &str) -> bool {
-    // Check if they're already the same
-    if id1 == id2 {
-        return true;
-    }
-    
-    // Check if one is an alias of the other
+    // Always use canonical IDs for comparison
     let canonical1 = get_canonical_device_id(id1);
     let canonical2 = get_canonical_device_id(id2);
+    
     if canonical1 == canonical2 {
+        log::debug!("[ALIAS] Devices {} and {} are the same (canonical: {})", id1, id2, canonical1);
         return true;
     }
     

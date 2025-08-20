@@ -283,13 +283,41 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
     justCompletedBootloaderUpdate.current = true;
   };
 
-  const StepComponent = ALL_STEPS[currentStep].component;
+  const StepComponent = effectiveAllSteps[currentStep].component;
   
   // Debug current step
-  console.log("SetupWizard render - currentStep:", currentStep, "stepId:", ALL_STEPS[currentStep].id, "component:", StepComponent.name);
+  console.log("SetupWizard render - currentStep:", currentStep, "stepId:", effectiveAllSteps[currentStep].id, "component:", StepComponent.name);
+
+  // Global Enter -> Next handler (except guarded steps)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+      // If a recovery flow is actively locking the UI, do not advance
+      if ((window as any).KEEPKEY_RECOVERY_IN_PROGRESS) return;
+      // If any modal is active, do not advance wizard
+      if ((window as any).KEEPKEY_MODAL_ACTIVE) return;
+      // Do not auto-advance if focused on an editable input/textarea/select/button
+      const ae = document.activeElement as HTMLElement | null;
+      if (ae) {
+        const tag = ae.tagName?.toLowerCase();
+        if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
+        // contenteditable elements
+        if ((ae as any).isContentEditable) return;
+      }
+      const stepId = effectiveAllSteps[currentStep].id;
+      // Guard bootloader step from auto-enter next
+      if (stepId === 'bootloader') return;
+      // Require choice on flow selection
+      if (stepId === 'create-or-recover' && !flowType) return;
+      e.preventDefault();
+      handleNext();
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [currentStep, flowType]);
   
   // Calculate progress based on visible steps
-  const currentStepId = ALL_STEPS[currentStep].id;
+  const currentStepId = effectiveAllSteps[currentStep].id;
   const visibleStepIndex = VISIBLE_STEPS.findIndex(step => step.id === currentStepId);
   
   // If we're past all visible steps, show 100% progress
@@ -299,7 +327,7 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
   } else {
     // Check if we're past all visible steps
     const lastVisibleStepId = VISIBLE_STEPS[VISIBLE_STEPS.length - 1].id;
-    const lastVisibleStepIndex = ALL_STEPS.findIndex(step => step.id === lastVisibleStepId);
+    const lastVisibleStepIndex = effectiveAllSteps.findIndex(step => step.id === lastVisibleStepId);
     if (currentStep > lastVisibleStepIndex) {
       actualProgress = 100;
     }
@@ -318,6 +346,19 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
     onFirmwareUpdateStart,
     onFirmwareUpdateComplete,
   };
+
+  // If recovery completed, skip PIN setup step automatically
+  const effectiveAllSteps = (() => {
+    if (wizardData.recoveryCompleted) {
+      const filtered = ALL_STEPS.filter(s => s.id !== 'pin');
+      return filtered as typeof ALL_STEPS;
+    }
+    if (wizardData.skipPinSetup) {
+      const filtered = ALL_STEPS.filter(s => s.id !== 'pin');
+      return filtered as typeof ALL_STEPS;
+    }
+    return ALL_STEPS;
+  })();
 
   return (
     <Box
@@ -345,7 +386,7 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
             {t('bootloaderUpdate.keepKeyBitcoinSetup')}
           </Text>
           <Text fontSize="md" color="gray.400">
-            {t(ALL_STEPS[currentStep].description)}
+            {t(effectiveAllSteps[currentStep].description)}
           </Text>
         </VStack>
       </Box>
@@ -377,13 +418,13 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
           wrap="nowrap"
         >
           {VISIBLE_STEPS.map((step, index) => {
-            const stepIndex = ALL_STEPS.findIndex(s => s.id === step.id);
+            const stepIndex = effectiveAllSteps.findIndex(s => s.id === step.id);
             const lastVisibleStepId = VISIBLE_STEPS[VISIBLE_STEPS.length - 1].id;
-            const lastVisibleStepIndex = ALL_STEPS.findIndex(s => s.id === lastVisibleStepId);
+            const lastVisibleStepIndex = effectiveAllSteps.findIndex(s => s.id === lastVisibleStepId);
             const isPastAllVisible = currentStep > lastVisibleStepIndex;
             
             const isCompleted = isPastAllVisible || (stepIndex !== -1 && stepIndex < currentStep);
-            const isCurrent = !isPastAllVisible && ALL_STEPS[currentStep]?.id === step.id;
+            const isCurrent = !isPastAllVisible && effectiveAllSteps[currentStep]?.id === step.id;
             const isActive = isCompleted || isCurrent;
             
             return (
@@ -445,7 +486,7 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
         overflow="hidden"
       >
         <Box w="100%" maxW="900px">
-          <StepComponent key={`step-${currentStep}-${ALL_STEPS[currentStep].id}`} {...stepProps} />
+          <StepComponent key={`step-${currentStep}-${effectiveAllSteps[currentStep].id}`} {...stepProps} />
         </Box>
       </Box>
 
@@ -469,14 +510,15 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
             >
               Previous
             </Button>
-            {/* Only show Next button if not on flow selection step or if flow is selected */}
-            {(ALL_STEPS[currentStep].id !== 'create-or-recover' || flowType) && (
+            {/* Only show Next when not on special guarded steps */}
+            {(effectiveAllSteps[currentStep].id !== 'create-or-recover' || flowType) &&
+             effectiveAllSteps[currentStep].id !== 'bootloader' && (
               <Button
                 colorScheme="orange"
                 onClick={handleNext}
                 size="lg"
               >
-                {currentStep === ALL_STEPS.length - 1 ? "Complete Setup" : "Next"}
+                {currentStep === effectiveAllSteps.length - 1 ? "Complete Setup" : "Next"}
               </Button>
             )}
           </HStack>

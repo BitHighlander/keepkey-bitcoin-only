@@ -63,18 +63,16 @@ export function StepBootloaderUpdate({ deviceId, onNext, onBack, onBootloaderUpd
         needsBootloaderUpdate: status?.needsBootloaderUpdate
       });
       
-      // Simple bootloader check - needs to be 2.1.5
+      // Prefer backend evaluation flags
       const currentBootloaderVersion = status?.bootloaderCheck?.currentVersion;
+      const backendNeedsUpdate = status?.bootloaderCheck?.needsUpdate === true || status?.needsBootloaderUpdate === true;
       
       console.log("Bootloader check:", {
         currentVersion: currentBootloaderVersion,
-        needsUpdate: status?.needsBootloaderUpdate
+        needsUpdate: backendNeedsUpdate
       });
       
-      // Check if bootloader needs update (anything not 2.1.5)
-      const needsBootloaderUpdate = currentBootloaderVersion !== "2.1.5" && currentBootloaderVersion !== "2.1.4";
-      
-      if (needsBootloaderUpdate && currentBootloaderVersion) {
+      if (backendNeedsUpdate) {
         console.log("Bootloader update needed: v" + currentBootloaderVersion + " → v2.1.5");
         // Show update UI
         if (!isInBootloaderMode) {
@@ -88,7 +86,7 @@ export function StepBootloaderUpdate({ deviceId, onNext, onBack, onBootloaderUpd
       }
       
       // Bootloader is good, move to next step
-      if (currentBootloaderVersion === "2.1.5" || currentBootloaderVersion === "2.1.4") {
+      if (!backendNeedsUpdate) {
         console.log("Bootloader is up to date, proceeding to next step");
         onNext();
         return;
@@ -212,12 +210,9 @@ export function StepBootloaderUpdate({ deviceId, onNext, onBack, onBootloaderUpd
 
   // Check if this is an old bootloader that MUST be updated
   const currentBootloaderVersion = deviceStatus?.bootloaderCheck?.currentVersion || "unknown";
-  const isOldBootloader = currentBootloaderVersion === "2.0.0" || 
+  const isOldBootloader = deviceStatus?.bootloaderCheck?.needsUpdate === true ||
                          currentBootloaderVersion.startsWith("1.") ||
-                         currentBootloaderVersion === "2.0.1" ||
-                         currentBootloaderVersion === "2.0.2" ||
-                         currentBootloaderVersion === "2.0.3" ||
-                         currentBootloaderVersion === "2.0.4";
+                         ["2.0.0","2.0.1","2.0.2","2.0.3","2.0.4"].includes(currentBootloaderVersion);
 
   return (
     <Box w="100%">
@@ -328,7 +323,7 @@ export function StepBootloaderUpdate({ deviceId, onNext, onBack, onBootloaderUpd
           )}
 
           <VStack gap={3} w="100%">
-            {(deviceStatus.needsBootloaderUpdate || isOldBootloader) && !isUpdating && (
+            {(deviceStatus.bootloaderCheck?.needsUpdate || deviceStatus.needsBootloaderUpdate || isOldBootloader) && !isUpdating && (
               <Button
                 colorScheme="blue"
                 size="lg"

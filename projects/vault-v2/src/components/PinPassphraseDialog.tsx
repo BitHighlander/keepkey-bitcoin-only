@@ -147,7 +147,7 @@ export const PinPassphraseDialog = ({
       
       // Only check device status if NOT in PIN flow to avoid disrupting the device
       try {
-        const status = await invoke('get_device_status', { deviceId });
+        const status: any = await invoke('get_device_status', { deviceId });
         console.log('📱 Device status:', status);
         
         // Check if PIN is cached (device is already unlocked for PIN)
@@ -161,15 +161,18 @@ export const PinPassphraseDialog = ({
             setStep('passphrase-entry');
             setIsLoading(false);
             return;
-          } else {
+          } else if (operationType !== 'settings') {
             // No requestId means this was opened manually or for some other reason
-            // In this case, just close since PIN is already cached
+            // For non-settings operations, close since PIN is already cached
             console.log('🔐 PIN cached and no requestId - closing dialog');
             setTimeout(() => {
               if (onComplete) onComplete();
               onClose();
             }, 100);
             return;
+          } else {
+            // For settings operations, we need to wait for the PIN request even if PIN is cached
+            console.log('🔐 Settings operation - continuing to wait for PIN request');
           }
         }
       } catch (err) {
@@ -177,6 +180,23 @@ export const PinPassphraseDialog = ({
       }
       
       // Device needs PIN to be triggered
+      
+      // For settings operations, device might already be awaiting PIN
+      if (operationType === 'settings') {
+        console.log('🔐 Settings operation - checking if device is already awaiting PIN...');
+        try {
+          const deviceState = await invoke<string>('get_device_interaction_state', { deviceId });
+          if (deviceState.includes('AwaitingPIN')) {
+            console.log('✅ Device is already awaiting PIN for settings operation');
+            setStep('pin-entry');
+            setDeviceReadyStatus('PIN matrix ready');
+            setIsLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.log('⚠️ Could not check device interaction state:', err);
+        }
+      }
       
       // Device needs PIN but hasn't been triggered yet - trigger it now
       console.log('🔐 Device needs PIN, triggering PIN request...');
@@ -196,8 +216,12 @@ export const PinPassphraseDialog = ({
       } catch (err: any) {
         const errorStr = String(err).toLowerCase();
         
-        // If the error indicates the device is awaiting passphrase, go directly to passphrase
-        if (errorStr.includes('awaiting passphrase') || errorStr.includes('passphrase')) {
+        // Special handling for when device is already awaiting PIN
+        if (errorStr.includes('awaiting pin') || errorStr.includes('device is awaiting pin input')) {
+          console.log('🔐 Device is already awaiting PIN, proceeding to PIN entry');
+          setStep('pin-entry');
+          setDeviceReadyStatus('PIN matrix ready');
+        } else if (errorStr.includes('awaiting passphrase') || errorStr.includes('passphrase')) {
           console.log('🔐 Device is awaiting passphrase, skipping PIN step');
           setStep('passphrase-entry');
           setDeviceReadyStatus('Device ready for passphrase');
@@ -338,16 +362,20 @@ export const PinPassphraseDialog = ({
         
         // Set a timeout to complete if no passphrase request comes
         const timeoutId = setTimeout(() => {
-          // Only complete if we're still in pin-submitting state
-          // (not if we've already transitioned to passphrase-entry)
-          if (step === 'pin-submitting') {
-            console.log('✅ No passphrase request received, PIN unlock complete');
-            setStep('success');
-            setTimeout(() => {
-              if (onComplete) onComplete();
-              onClose();
-            }, 500);
-          }
+          // Use a ref or state callback to check current step
+          setStep(currentStep => {
+            // Only complete if we're still in pin-submitting state
+            // (not if we've already transitioned to passphrase-entry)
+            if (currentStep === 'pin-submitting') {
+              console.log('✅ No passphrase request received, PIN unlock complete');
+              setTimeout(() => {
+                if (onComplete) onComplete();
+                onClose();
+              }, 500);
+              return 'success';
+            }
+            return currentStep; // Don't change state if already transitioned
+          });
         }, 1000); // Wait 1 second for passphrase request
         
         // Store timeout ID so we can clear it if we transition to passphrase
@@ -614,7 +642,7 @@ export const PinPassphraseDialog = ({
         </Box>
 
         <Box p={5}>
-          <VStack spacing={6} py={4}>
+          <VStack gap={6} py={4}>
             <Text fontSize="md" color="gray.300" textAlign="center">
               {getOperationDescription()}
             </Text>
@@ -666,7 +694,7 @@ export const PinPassphraseDialog = ({
                   borderWidth="1px"
                   borderColor="gray.600"
                 >
-                  <HStack spacing={2} justify="center">
+                  <HStack gap={2} justify="center">
                     {pinDots}
                   </HStack>
                 </Box>
@@ -689,7 +717,7 @@ export const PinPassphraseDialog = ({
                       <Button
                         key={index}
                         onClick={() => handlePinButtonClick(position)}
-                        isDisabled={pinPositions.length >= 9}
+                        disabled={pinPositions.length >= 9}
                         size="lg"
                         h="50px"
                         w="50px"
@@ -706,19 +734,21 @@ export const PinPassphraseDialog = ({
                     ))}
                   </SimpleGrid>
 
-                  <HStack mt={3} spacing={2} justify="center">
+                  <HStack mt={3} gap={2} justify="center">
                     <Button
-                      leftIcon={<LuDelete />}
                       onClick={handlePinBackspace}
-                      isDisabled={pinPositions.length === 0}
+                      disabled={pinPositions.length === 0}
                       size="sm"
                       variant="outline"
                     >
-                      Back
+                      <HStack gap={2}>
+                        <LuDelete />
+                        <span>Back</span>
+                      </HStack>
                     </Button>
                     <Button
                       onClick={handlePinClear}
-                      isDisabled={pinPositions.length === 0}
+                      disabled={pinPositions.length === 0}
                       size="sm"
                       variant="outline"
                     >
@@ -796,7 +826,7 @@ export const PinPassphraseDialog = ({
                     size="sm"
                     variant="ghost"
                     onClick={() => setShowPassphrase(!showPassphrase)}
-                    isDisabled={awaitingDeviceConfirmation}
+                    disabled={awaitingDeviceConfirmation}
                   >
                     {showPassphrase ? <LuEyeOff /> : <LuEye />}
                   </IconButton>
@@ -880,11 +910,11 @@ export const PinPassphraseDialog = ({
 
         {/* Footer */}
         <Box p={4} borderTopWidth="1px" borderColor="gray.700" bg="gray.850">
-          <HStack spacing={3} justify="flex-end">
+          <HStack gap={3} justify="flex-end">
             <Button 
               variant="outline" 
               onClick={handleCancel}
-              isDisabled={step === 'pin-submitting' || step === 'passphrase-submitting'}
+              disabled={step === 'pin-submitting' || step === 'passphrase-submitting'}
               borderColor="gray.600"
               color="gray.300"
               _hover={{ bg: "gray.700" }}
@@ -896,7 +926,7 @@ export const PinPassphraseDialog = ({
               <Button
                 colorScheme="blue"
                 onClick={handleSubmitPin}
-                isDisabled={pinPositions.length === 0}
+                disabled={pinPositions.length === 0}
               >
                 {t('passphrase.buttons.submit')}
               </Button>
@@ -907,14 +937,14 @@ export const PinPassphraseDialog = ({
                 <Button
                   variant="outline"
                   onClick={handleSkipPassphrase}
-                  isDisabled={hasSubmittedPassphraseForSession}
+                  disabled={hasSubmittedPassphraseForSession}
                 >
                   {t('common.buttons.skip')}
                 </Button>
                 <Button
                   colorScheme="blue"
                   onClick={handleSubmitPassphrase}
-                  isDisabled={hasSubmittedPassphraseForSession}
+                  disabled={hasSubmittedPassphraseForSession}
                 >
                   {t('passphrase.buttons.submit')}
                 </Button>

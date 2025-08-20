@@ -89,7 +89,12 @@ impl EventController {
                         
                         // Check for newly connected devices
                         for device in &current_devices {
-                            if !last_devices.iter().any(|d| d.unique_id == device.unique_id) {
+                            // Use canonical ID comparison to avoid duplicate connections
+                            let device_canonical = crate::commands::get_canonical_device_id(&device.unique_id);
+                            if !last_devices.iter().any(|d| {
+                                let d_canonical = crate::commands::get_canonical_device_id(&d.unique_id);
+                                d_canonical == device_canonical
+                            }) {
                                 // Check if this is a duplicate of an already connected device
                                 let is_duplicate = current_devices.iter().any(|other| {
                                     other.unique_id != device.unique_id && 
@@ -132,7 +137,7 @@ impl EventController {
                                            crate::commands::is_device_in_recovery_flow(existing_id) {
                                             println!("🔄 Device {} appears to be recovery device {} reconnecting", 
                                                     device.unique_id, existing_id);
-                                            let _ = crate::commands::add_recovery_device_alias(&device.unique_id, existing_id);
+                                            let _ = crate::commands::add_device_alias(&device.unique_id, existing_id, "recovery_reconnect");
                                             
                                             // Emit special reconnection event
                                             let _ = app_handle.emit("device:recovery-reconnected", serde_json::json!({
@@ -398,8 +403,13 @@ impl EventController {
                         
                         // Check for disconnected devices
                         for device in &last_devices {
-                            if !current_devices.iter().any(|d| d.unique_id == device.unique_id) {
-                                println!("🔌❌ Device disconnected: {}", device.unique_id);
+                            // Use canonical ID comparison
+                            let device_canonical = crate::commands::get_canonical_device_id(&device.unique_id);
+                            if !current_devices.iter().any(|d| {
+                                let d_canonical = crate::commands::get_canonical_device_id(&d.unique_id);
+                                d_canonical == device_canonical
+                            }) {
+                                println!("🔌❌ Device potentially disconnected: {} (canonical: {})", device.unique_id, device_canonical);
                                 
                                 // Check if device is in recovery flow before cleaning up
                                 let is_in_recovery = crate::commands::is_device_in_recovery_flow(&device.unique_id);
@@ -410,30 +420,88 @@ impl EventController {
                                     continue;
                                 }
                                 
-                                // Emit device disconnected status
-                                println!("📡 Emitting status: Device disconnected");
-                                if let Err(e) = app_handle.emit("status:update", serde_json::json!({
-                                    "status": "Device disconnected"
-                                })) {
-                                    println!("❌ Failed to emit disconnect status: {}", e);
-                                }
-                                
-                                // Clean up device queue for disconnected device
-                                if let Some(state) = app_handle.try_state::<crate::commands::DeviceQueueManager>() {
-                                    let device_id = device.unique_id.clone();
-                                    // Clone the underlying Arc so it outlives this scope
-                                    let queue_manager_arc = state.inner().clone();
+                                // Windows disconnect debounce
+                                #[cfg(target_os = "windows")]
+                                {
+                                    println!("🪟 Windows disconnect debounce - waiting 300ms to confirm...");
+                                    let check_id = device.unique_id.clone();
+                                    let app_for_debounce = app_handle.clone();
                                     tokio::spawn(async move {
-                                        println!("♻️ Cleaning up device queue for disconnected device: {}", device_id);
-                                        let mut manager = queue_manager_arc.lock().await;
-                                        if let Some(handle) = manager.remove(&device_id) {
-                                            let _ = handle.shutdown().await;
-                                            println!("✅ Device queue cleaned up for: {}", device_id);
+                                        tokio::time::sleep(Duration::from_millis(300)).await;
+                                        
+                                        // Check if device really disconnected or just reconnected with new ID
+                                        let still_gone = !keepkey_rust::features::list_connected_devices()
+                                            .iter()
+                                            .any(|d| crate::commands::are_devices_potentially_same(&d.unique_id, &check_id));
+                                        
+                                        if still_gone {
+                                            println!("✅ Device {} confirmed disconnected after debounce", check_id);
+                                            
+                                            // Emit device disconnected status
+                                            println!("📡 Emitting status: Device disconnected");
+                                            if let Err(e) = app_for_debounce.emit("status:update", serde_json::json!({
+                                                "status": "Device disconnected"
+                                            })) {
+                                                println!("❌ Failed to emit disconnect status: {}", e);
+                                            }
+                                            
+                                            // TEMPORARILY DISABLED: Clean up device queue for disconnected device
+                                            // This is causing crashes due to improper USB resource cleanup
+                                            // TODO: Fix USB transport Drop implementation before re-enabling
+                                            /*
+                                            if let Some(state) = app_for_debounce.try_state::<crate::commands::DeviceQueueManager>() {
+                                                let queue_manager_arc = state.inner().clone();
+                                                println!("♻️ Cleaning up device queue for disconnected device: {}", check_id);
+                                                let mut manager = queue_manager_arc.lock().await;
+                                                if let Some(handle) = manager.remove(&check_id) {
+                                                    let _ = handle.shutdown().await;
+                                                    println!("✅ Device queue cleaned up for: {}", check_id);
+                                                }
+                                            }
+                                            */
+                                            println!("⚠️ Skipping device queue cleanup to prevent USB crashes");
+                                            
+                                            let _ = app_for_debounce.emit("device:disconnected", &check_id);
+                                        } else {
+                                            println!("⚡ Device {} reconnected with different ID during debounce period", check_id);
                                         }
                                     });
+                                    continue; // Don't process disconnect immediately on Windows
                                 }
                                 
-                                let _ = app_handle.emit("device:disconnected", &device.unique_id);
+                                // Non-Windows: immediate disconnect handling
+                                #[cfg(not(target_os = "windows"))]
+                                {
+                                    // Emit device disconnected status
+                                    println!("📡 Emitting status: Device disconnected");
+                                    if let Err(e) = app_handle.emit("status:update", serde_json::json!({
+                                        "status": "Device disconnected"
+                                    })) {
+                                        println!("❌ Failed to emit disconnect status: {}", e);
+                                    }
+                                    
+                                    // TEMPORARILY DISABLED: Clean up device queue for disconnected device
+                                    // This is causing crashes due to improper USB resource cleanup
+                                    // TODO: Fix USB transport Drop implementation before re-enabling
+                                    /*
+                                    if let Some(state) = app_handle.try_state::<crate::commands::DeviceQueueManager>() {
+                                        let device_id = device.unique_id.clone();
+                                        // Clone the underlying Arc so it outlives this scope
+                                        let queue_manager_arc = state.inner().clone();
+                                        tokio::spawn(async move {
+                                            println!("♻️ Cleaning up device queue for disconnected device: {}", device_id);
+                                            let mut manager = queue_manager_arc.lock().await;
+                                            if let Some(handle) = manager.remove(&device_id) {
+                                                let _ = handle.shutdown().await;
+                                                println!("✅ Device queue cleaned up for: {}", device_id);
+                                            }
+                                        });
+                                    }
+                                    */
+                                    println!("⚠️ Skipping device queue cleanup to prevent USB crashes");
+                                    
+                                    let _ = app_handle.emit("device:disconnected", &device.unique_id);
+                                }
                             }
                         }
                         

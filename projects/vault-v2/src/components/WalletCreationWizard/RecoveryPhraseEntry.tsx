@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTypedTranslation } from "../../hooks/useTypedTranslation";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Box,
@@ -33,6 +34,7 @@ export function RecoveryPhraseEntry({
   onError, 
   onBack 
 }: RecoveryPhraseEntryProps) {
+  const { t } = useTypedTranslation('setup');
   const [currentWord, setCurrentWord] = useState(0);
   const [currentChar, setCurrentChar] = useState(0);
   const [characterInputs, setCharacterInputs] = useState(['', '', '', '']);
@@ -211,12 +213,11 @@ export function RecoveryPhraseEntry({
         w="90%"
       >
         <Heading size="lg" textAlign="center" mb={2}>
-          Enter Your Recovery Sentence
+          {t('recovery.enterYourRecoverySentence', 'Enter Your Recovery Sentence')}
         </Heading>
         
         <Text fontSize="sm" color="gray.400" textAlign="center" mb={6}>
-          Using the scrambled keyboard legend on your KeepKey, enter the first 4 letters of each word. 
-          If there are less than 4 letters in the word, press Enter, hit the space bar, or click next when you're done typing.
+          {t('recovery.enterInstructions', 'Using the scrambled keyboard legend on your KeepKey, enter the first 4 letters of each word. If there are less than 4 letters in the word, press Enter, hit the space bar, or click next when you\'re done typing.')}
         </Text>
         
         <VStack gap={6}>
@@ -224,10 +225,10 @@ export function RecoveryPhraseEntry({
           <Box w="100%">
             <HStack justify="space-between" mb={2}>
               <Text fontSize="sm" color="gray.300">
-                Word {currentWord + 1} of {wordCount}
+                {t('recovery.wordOf', { defaultValue: 'Word {{current}} of {{total}}', current: currentWord + 1, total: wordCount })}
               </Text>
               <Text fontSize="sm" color="gray.300">
-                {Math.round(progressPercent)}% Complete
+                {t('recovery.percentComplete', { defaultValue: '{{percent}}% Complete', percent: Math.round(progressPercent) })}
               </Text>
             </HStack>
             <Box
@@ -296,7 +297,7 @@ export function RecoveryPhraseEntry({
 
           {isAutoCompleted && (
             <Text fontSize="sm" color="green.400" textAlign="center">
-              ✓ Word auto-completed by device
+              {t('recovery.wordAutoCompleted', '✓ Word auto-completed by device')}
             </Text>
           )}
 
@@ -315,7 +316,7 @@ export function RecoveryPhraseEntry({
                 color: "white"
               }}
             >
-              Backspace
+              {t('recovery.backspace', 'Backspace')}
             </Button>
 
             <Button
@@ -325,8 +326,8 @@ export function RecoveryPhraseEntry({
               flex={2}
               disabled={isProcessing || !canProceed}
             >
-              {isProcessing ? "Processing..." : 
-               currentWord < wordCount - 1 ? "Next Word" : "Complete Recovery"}
+              {isProcessing ? t('recovery.processing', 'Processing...') : 
+               currentWord < wordCount - 1 ? t('recovery.nextWord', 'Next Word') : t('recovery.completeRecovery', 'Complete Recovery')}
             </Button>
           </HStack>
 
@@ -340,7 +341,7 @@ export function RecoveryPhraseEntry({
                 color: "white"
               }}
             >
-              Cancel Recovery
+              {t('recovery.cancelRecovery', 'Cancel Recovery')}
             </Button>
           )}
         </VStack>

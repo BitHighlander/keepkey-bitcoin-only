@@ -203,6 +203,7 @@
       "warning": "Avertissement: Supprimer le PIN rendra votre appareil moins sécurisé",
       "confirm": "Êtes-vous sûr de vouloir supprimer la protection par PIN?",
       "enterCurrent": "Entrez le PIN actuel pour confirmer",
+      "instructionOnComputer": "Entrez votre PIN actuel sur l'ordinateur pour désactiver la protection par PIN",
       "success": "PIN supprimé avec succès",
       "failed": "Échec de la suppression du PIN",
       "buttons": {

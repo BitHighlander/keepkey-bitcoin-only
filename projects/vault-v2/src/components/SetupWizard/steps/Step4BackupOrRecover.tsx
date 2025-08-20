@@ -142,7 +142,8 @@ export function Step4BackupOrRecover({
     const handleRecoveryComplete = async () => {
       setIsLoading(true);
       try {
-        await invoke('complete_recovery', { deviceId });
+        // Mark recovery complete in wizard state and skip PIN/label steps
+        updateWizardData({ recoveryCompleted: true, skipDeviceLabel: true, skipPinSetup: true });
         onNext();
       } catch (err) {
         console.error("Failed to complete recovery:", err);

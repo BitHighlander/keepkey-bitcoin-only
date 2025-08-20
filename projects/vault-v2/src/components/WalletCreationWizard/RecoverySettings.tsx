@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useTypedTranslation } from "../../hooks/useTypedTranslation";
 import {
   Box,
   Heading,
@@ -26,9 +27,11 @@ export function RecoverySettings({
   isLoading = false, 
   error 
 }: RecoverySettingsProps) {
+  const { t } = useTypedTranslation('setup');
   const [wordCount, setWordCount] = useState<12 | 18 | 24>(12);
   // Passphrase option removed - always false
   const usePassphrase = false;
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const handleSubmit = () => {
     const settings: RecoverySettings = {
@@ -38,8 +41,42 @@ export function RecoverySettings({
     onComplete(settings);
   };
 
+  // Enter key should submit (same as pressing Next) on this screen
+  useEffect(() => {
+    // Signal to the wizard to not auto-advance while this modal is open
+    (window as any).KEEPKEY_MODAL_ACTIVE = true;
+    // Focus the container so it can catch key events
+    containerRef.current?.focus();
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+      e.preventDefault();
+      // Ensure other handlers don't run
+      (e as any).stopImmediatePropagation?.();
+      e.stopPropagation();
+      if (!isLoading) {
+        handleSubmit();
+      }
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => {
+      window.removeEventListener('keydown', handler, true);
+      (window as any).KEEPKEY_MODAL_ACTIVE = false;
+    };
+  }, [isLoading, wordCount]);
+
   return (
-    <div style={{ 
+    <div 
+      ref={containerRef}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !isLoading) {
+          e.preventDefault();
+          (e as any).stopImmediatePropagation?.();
+          e.stopPropagation();
+          handleSubmit();
+        }
+      }}
+      style={{ 
       position: 'fixed', 
       top: 0, 
       left: 0, 
@@ -50,7 +87,8 @@ export function RecoverySettings({
       alignItems: 'center', 
       justifyContent: 'center', 
       zIndex: 9999 
-    }}>
+    }}
+    >
       <Box 
         maxW="md" 
         bg="gray.800" 
@@ -60,7 +98,7 @@ export function RecoverySettings({
         boxShadow="xl"
       >
         <Heading size="lg" textAlign="center" mb={6}>
-          Recover Your Wallet
+          {t('recovery.title')}
         </Heading>
         
         <VStack gap={6}>
@@ -72,7 +110,7 @@ export function RecoverySettings({
 
           <Box w="100%">
             <Text fontSize="lg" fontWeight="semibold" mb={4}>
-              Recovery Sentence Length
+              {t('recovery.sentenceLength')}
             </Text>
             <HStack gap={3} w="100%">
               <Box
@@ -91,7 +129,7 @@ export function RecoverySettings({
                 }}
               >
                 <Text fontSize="md" textAlign="center" fontWeight={wordCount === 12 ? "bold" : "normal"}>
-                  12 words
+                  {t('recovery.twelveWords')}
                 </Text>
               </Box>
               <Box
@@ -110,7 +148,7 @@ export function RecoverySettings({
                 }}
               >
                 <Text fontSize="md" textAlign="center" fontWeight={wordCount === 18 ? "bold" : "normal"}>
-                  18 words
+                  {t('recovery.eighteenWords')}
                 </Text>
               </Box>
               <Box
@@ -129,12 +167,12 @@ export function RecoverySettings({
                 }}
               >
                 <Text fontSize="md" textAlign="center" fontWeight={wordCount === 24 ? "bold" : "normal"}>
-                  24 words
+                  {t('recovery.twentyFourWords')}
                 </Text>
               </Box>
             </HStack>
             <Text fontSize="sm" color="gray.400" mt={3}>
-              Enter your {wordCount}-word recovery phrase to restore your wallet.
+              {t('recovery.enterPhraseHelp', { count: wordCount, defaultValue: 'Enter your {{count}}-word recovery phrase to restore your wallet.' })}
             </Text>
           </Box>
 
@@ -146,7 +184,7 @@ export function RecoverySettings({
               w="100%"
               disabled={isLoading}
             >
-              {isLoading ? "Starting Recovery..." : "Recover Wallet"}
+              {isLoading ? t('recovery.startingRecovery') : t('recovery.recoverWallet')}
             </Button>
             
             {onBack && (
@@ -163,7 +201,7 @@ export function RecoverySettings({
                   color: "white"
                 }}
               >
-                Back
+                {t('recovery.back')}
               </Button>
             )}
           </VStack>

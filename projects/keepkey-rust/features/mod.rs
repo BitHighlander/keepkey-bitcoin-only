@@ -3,7 +3,6 @@ use hex;
 use rusb::{Device, GlobalContext};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 
@@ -33,11 +32,17 @@ struct CachedDeviceInfo {
 static DEVICE_CACHE: Lazy<Arc<Mutex<HashMap<String, CachedDeviceInfo>>>> = 
     Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
-/// Clean expired entries from the device cache (older than 30 seconds)
+/// Clean expired entries from the device cache (older than 60-90 seconds on Windows)
 fn clean_device_cache() {
     if let Ok(mut cache) = DEVICE_CACHE.lock() {
         let now = std::time::Instant::now();
-        cache.retain(|_, info| now.duration_since(info.last_seen).as_secs() < 30);
+        // Use longer TTL on Windows due to more frequent enumeration changes
+        #[cfg(target_os = "windows")]
+        let ttl_secs = 90;
+        #[cfg(not(target_os = "windows"))]
+        let ttl_secs = 60;
+        
+        cache.retain(|_, info| now.duration_since(info.last_seen).as_secs() < ttl_secs);
     }
 }
 
@@ -48,7 +53,7 @@ fn clean_device_cache() {
 //   - /docs/usb/oob_mode_detection.md
 //   - /docs/usb/hid_fallback_implementation.md
 //   - Vault backend (src-tauri/src/features/mod.rs)
-pub fn list_devices() -> Box<[Device<GlobalContext>]> {
+pub fn list_devices() -> Vec<Device<GlobalContext>> {
     rusb::devices()
         .unwrap()
         .iter()
@@ -56,7 +61,7 @@ pub fn list_devices() -> Box<[Device<GlobalContext>]> {
             let device_desc = device.device_descriptor().unwrap();
             DEVICE_IDS.contains(&(device_desc.vendor_id(), device_desc.product_id()))
         })
-        .collect()
+        .collect::<Vec<_>>()
 }
 
 /// Structure representing device features returned by the KeepKey
@@ -146,14 +151,15 @@ pub fn detect_device_state(features: &DeviceFeatures, raw_len: Option<usize>) ->
     if features.version == "Legacy Bootloader" {
         return DetectedDeviceState::BootloaderMode;
     }
-    // 3. Uninitialized + short response = OOB wallet
+    // 3. Uninitialized + short response = OOB wallet  
     if !features.initialized {
         if let Some(len) = raw_len {
             if len < 64 {
                 return DetectedDeviceState::OobWalletMode;
             }
         }
-        return DetectedDeviceState::OobWalletMode;
+        // Don't over-classify - uninitialized alone doesn't mean OOB
+        return DetectedDeviceState::WalletMode;
     }
     // 4. Default
     DetectedDeviceState::WalletMode
@@ -211,7 +217,14 @@ pub fn get_device_features_for_device(target_device: &FriendlyUsbDevice) -> Resu
     let mut transport = crate::device_queue::DeviceQueueFactory::create_transport_for_device(target_device)
         .map_err(|e| anyhow!("Failed to initialize transport for device {}: {}", target_device.unique_id, e))?;
 
-    // Reset the device to clear any stuck state
+    // Add Windows settle delay before first communication
+    #[cfg(target_os = "windows")]
+    {
+        log::info!("{TAG} Windows detected - adding settle delay before first Initialize");
+        std::thread::sleep(std::time::Duration::from_millis(800));
+    }
+    
+    // Reset the device to clear any stuck state (reverting to original approach for stability)
     log::info!("{TAG} Resetting device {} before communication...", target_device.unique_id);
     transport.reset()
         .map_err(|e| anyhow!("Failed to reset device {}: {}", target_device.unique_id, e))?;
@@ -461,7 +474,14 @@ pub fn get_device_features_via_hid(target_device: &FriendlyUsbDevice) -> Result<
                 let _ = adapter.reset(); // Ignore reset errors for HID
                 std::thread::sleep(std::time::Duration::from_millis(100));
                 
-                let init_msg = Initialize::default().into();
+                // Add Windows settle delay
+                #[cfg(target_os = "windows")]
+                {
+                    log::info!("{TAG} Windows detected - adding settle delay after reset");
+                    std::thread::sleep(std::time::Duration::from_millis(700));
+                }
+                
+                let init_msg: Message = Initialize::default().into();
                 match adapter.handle(init_msg) {
                     Ok(features_msg) => {
                         let features = match features_msg {
@@ -522,13 +542,16 @@ pub fn get_device_features_via_hid(target_device: &FriendlyUsbDevice) -> Result<
                     Ok(mut transport) => {
                         let adapter = &mut transport as &mut dyn ProtocolAdapter;
                         
-                        // Reset device before communication
-                        log::info!("{TAG} Resetting HID device (enumerate) before communication...");
-                        let _ = adapter.reset(); // Ignore reset errors for HID
-                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        // Add Windows settle delay
+                        #[cfg(target_os = "windows")]
+                        {
+                            log::info!("{TAG} Windows detected - adding settle delay before HID Initialize (enumerate)");
+                            std::thread::sleep(std::time::Duration::from_millis(800));
+                        }
                         
-                        let init_msg = Initialize::default().into();
-                        match adapter.handle(init_msg) {
+                        let init_msg: Message = Initialize::default().into();
+                        // Try without reset first
+                        match adapter.handle(init_msg.clone()) {
                             Ok(features_msg) => {
                                 let features = match features_msg {
                                     Message::Features(f) => f,
@@ -625,7 +648,7 @@ fn device_to_friendly(device: &rusb::Device<rusb::GlobalContext>) -> FriendlyUsb
         // If it's a KeepKey device and we can't open it, still add it with default values
         if vid == 0x2B24 { // KEEPKEY_VID
             log::warn!("Could not open KeepKey device {:04x}:{:04x}. Using default values.", vid, pid);
-            (Some("KeyHodlers, LLC".to_string()), Some("KeepKey".to_string()), None)
+            (Some("KeepKey".to_string()), Some("KeepKey".to_string()), None)
         } else {
             (None, None, None)
         }
@@ -719,21 +742,20 @@ fn device_to_friendly_with_cache(device: &rusb::Device<rusb::GlobalContext>) -> 
     let addr = device.address();
     let bus_addr_key = format!("{}:{}", bus, addr);
     
-    // Check cache first for this bus:address combination
-    if let Ok(cache) = DEVICE_CACHE.lock() {
-        for (_, cached_info) in cache.iter() {
-            let cached_bus_addr = format!("{}:{}", cached_info.bus, cached_info.address);
-            if cached_bus_addr == bus_addr_key {
-                // Found cached info for this bus:address, return stable device
-                return FriendlyUsbDevice::new(
-                    cached_info.stable_id.clone(),
-                    cached_info.vid,
-                    cached_info.pid,
-                    cached_info.manufacturer.clone(),
-                    cached_info.product.clone(),
-                    cached_info.serial_number.clone(),
-                );
-            }
+    // Check cache first for this bus:address combination (O(1) lookup)
+    if let Ok(mut cache) = DEVICE_CACHE.lock() {
+        if let Some(cached_info) = cache.get_mut(&bus_addr_key) {
+            // Found cached info for this bus:address, update last_seen and return stable device
+            cached_info.last_seen = std::time::Instant::now();
+            log::info!("[CACHE HIT] Found device in cache: bus:addr={}, stable_id={}", bus_addr_key, cached_info.stable_id);
+            return FriendlyUsbDevice::new(
+                cached_info.stable_id.clone(),
+                cached_info.vid,
+                cached_info.pid,
+                cached_info.manufacturer.clone(),
+                cached_info.product.clone(),
+                cached_info.serial_number.clone(),
+            );
         }
     }
     
@@ -769,21 +791,61 @@ fn device_to_friendly_with_cache(device: &rusb::Device<rusb::GlobalContext>) -> 
         // If it's a KeepKey device and we can't open it, still add it with default values
         if vid == 0x2B24 { // KEEPKEY_VID
             log::warn!("Could not open KeepKey device {:04x}:{:04x}. Using default values.", vid, pid);
-            (Some("KeyHodlers, LLC".to_string()), Some("KeepKey".to_string()), None)
+            (Some("KeepKey".to_string()), Some("KeepKey".to_string()), None)
         } else {
             (None, None, None)
         }
     };
     
+    // Check for serial reuse - device reconnected with different bus:addr
+    if let Some(ref serial) = serial_number {
+        if !serial.is_empty() {
+            if let Ok(mut cache) = DEVICE_CACHE.lock() {
+                // Look for existing entry with this serial
+                let existing_entry = cache.iter_mut()
+                    .find(|(_, info)| info.serial_number.as_ref() == Some(serial));
+                
+                if let Some((old_key, info)) = existing_entry {
+                    // Device reconnected - reuse stable ID and update
+                    log::info!("[SERIAL REUSE] Device with serial {} reconnected: old bus:addr={}, new bus:addr={}", 
+                              serial, old_key, bus_addr_key);
+                    info.last_seen = std::time::Instant::now();
+                    info.bus = bus;
+                    info.address = addr;
+                    
+                    let stable_device = FriendlyUsbDevice::new(
+                        info.stable_id.clone(),
+                        info.vid,
+                        info.pid,
+                        info.manufacturer.clone(),
+                        info.product.clone(),
+                        info.serial_number.clone(),
+                    );
+                    
+                    // Add alias entry for new bus:addr pointing to same device info
+                    let cached_info = info.clone();
+                    cache.insert(bus_addr_key.clone(), cached_info);
+                    
+                    return stable_device;
+                }
+            }
+        }
+    }
+    
     // Determine stable unique ID - prefer serial if available
     let stable_id = if let Some(ref serial) = serial_number {
         if !serial.is_empty() {
+            log::info!("[DEVICE ID] Using serial as stable ID: {}", serial);
             serial.clone()
         } else {
-            format!("keepkey_{:04x}_{:04x}_bus{}_addr{}", vid, pid, bus, addr)
+            let id = format!("keepkey_{:04x}_{:04x}_bus{}_addr{}", vid, pid, bus, addr);
+            log::info!("[DEVICE ID] Serial empty, using fallback ID: {}", id);
+            id
         }
     } else {
-        format!("keepkey_{:04x}_{:04x}_bus{}_addr{}", vid, pid, bus, addr)
+        let id = format!("keepkey_{:04x}_{:04x}_bus{}_addr{}", vid, pid, bus, addr);
+        log::info!("[DEVICE ID] No serial, using fallback ID: {}", id);
+        id
     };
     
     // Cache this device information
@@ -801,6 +863,8 @@ fn device_to_friendly_with_cache(device: &rusb::Device<rusb::GlobalContext>) -> 
             last_seen: std::time::Instant::now(),
         };
         cache.insert(cache_key, cached_info);
+        log::info!("[CACHE] Cached device: bus:addr={}, stable_id={}, serial={:?}", 
+                  bus_addr_key, stable_id, serial_number);
     }
     
     FriendlyUsbDevice::new(
