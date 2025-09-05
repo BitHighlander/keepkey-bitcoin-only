@@ -4,8 +4,11 @@
 linker = "x86_64-w64-mingw32-gcc"
 ar = "x86_64-w64-mingw32-ar"
 
+# Note: SUBSYSTEM:WINDOWS is only applied to the final binary, not build scripts
+# This is handled by Tauri automatically for the main application
 [target.x86_64-pc-windows-msvc]
-rustflags = ["-C", "link-arg=/SUBSYSTEM:WINDOWS"]
+# Remove the global SUBSYSTEM:WINDOWS flag as it breaks build scripts
+# Tauri will handle the subsystem for the main app
 
 # Optional: Use LLD linker for faster builds
 # [target.x86_64-pc-windows-gnu]
