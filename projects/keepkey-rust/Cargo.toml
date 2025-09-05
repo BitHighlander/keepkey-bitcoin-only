@@ -4,7 +4,7 @@ name = "keepkey_rust"
 [lib]
 name = "keepkey_rust"
 path = "core_lib.rs"
-version = "0.2.11"
+version = "0.2.12"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Headless multi-device queue and transport layer for KeepKey hardware wallets."
