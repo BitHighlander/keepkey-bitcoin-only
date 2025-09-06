@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, VStack, Text, Button, Code, Collapse } from '@chakra-ui/react';
+import { Box, VStack, Text, Button, Code } from '@chakra-ui/react';
 import { deviceLogger, LogCategory } from '../utils/deviceLogger';
 
 interface Props {
@@ -120,7 +120,7 @@ export class ErrorBoundary extends Component<Props, State> {
       // Default error UI
       return (
         <Box p={6} bg="red.900" borderRadius="lg" borderWidth="1px" borderColor="red.700">
-          <VStack spacing={4} align="stretch">
+          <VStack gap={4} align="stretch">
             <Text fontSize="xl" fontWeight="bold" color="red.200">
               ⚠️ Something went wrong
             </Text>
@@ -171,7 +171,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
             </Box>
             
-            <Collapse in={this.state.showDetails}>
+            {this.state.showDetails && (
               <Box 
                 mt={4} 
                 p={3} 
@@ -208,7 +208,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   </>
                 )}
               </Box>
-            </Collapse>
+            )}
           </VStack>
         </Box>
       );

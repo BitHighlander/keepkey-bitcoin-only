@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Box, Button, VStack, Text, useDisclosure, Drawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerBody, DrawerCloseButton } from '@chakra-ui/react';
+import { Box, Button, VStack, Text } from '@chakra-ui/react';
+import { useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton } from '../components/ui/modal';
 import { deviceLogger } from '../utils/deviceLogger';
 
 export const DebugPanel = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open: isOpen, onOpen, onClose } = useDisclosure();
   const [isVisible, setIsVisible] = useState(false);
   
   // Toggle debug panel with keyboard shortcut (Ctrl+Shift+D)
@@ -52,7 +53,7 @@ export const DebugPanel = () => {
         borderWidth="1px"
         borderColor="gray.600"
       >
-        <VStack spacing={2}>
+        <VStack gap={2}>
           <Text fontSize="xs" color="gray.400">Debug Panel (Ctrl+Shift+D)</Text>
           <Button size="xs" colorScheme="blue" onClick={onOpen}>
             View Logs
@@ -66,12 +67,12 @@ export const DebugPanel = () => {
         </VStack>
       </Box>
       
-      <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="lg">
-        <DrawerOverlay />
-        <DrawerContent bg="gray.900">
-          <DrawerCloseButton />
-          <DrawerHeader color="white">Device Connection Logs</DrawerHeader>
-          <DrawerBody>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent style={{ maxWidth: '80vw', backgroundColor: '#1a1a1a' }}>
+          <ModalCloseButton onClick={onClose} />
+          <ModalHeader style={{ color: 'white' }}>Device Connection Logs</ModalHeader>
+          <ModalBody>
             <Box
               as="pre"
               fontSize="xs"
@@ -80,14 +81,15 @@ export const DebugPanel = () => {
               p={4}
               borderRadius="md"
               overflowY="auto"
-              maxH="80vh"
+              maxH="60vh"
               fontFamily="mono"
+              style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
             >
               {deviceLogger.exportLogs()}
             </Box>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 };
