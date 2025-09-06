@@ -591,11 +591,13 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
             zIndex: -1,
           }}
         >
-          <DialogHeader borderBottomWidth="1px" borderColor="gray.700" pb={4}>
-            <DialogTitle color="white">{t('settings:title')}</DialogTitle>
-            <DialogCloseTrigger color="gray.400" _hover={{ color: "white" }}>
-              <FaTimes />
-            </DialogCloseTrigger>
+          <DialogHeader borderBottomWidth="1px" borderColor="gray.700" pb={4} mb={4}>
+            <HStack justifyContent="space-between" width="100%">
+              <DialogTitle color="white" fontSize="xl" fontWeight="bold">{t('settings:title')}</DialogTitle>
+              <DialogCloseTrigger color="gray.400" _hover={{ color: "white" }}>
+                <FaTimes />
+              </DialogCloseTrigger>
+            </HStack>
           </DialogHeader>
           
           <DialogBody p={6} flex="1" overflowY="auto">
@@ -653,17 +655,6 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                 >
                   <LuFileText size={16} />
                   Logs
-                </Tabs.Trigger>
-                <Tabs.Trigger 
-                  value="mcp"
-                  flex="1"
-                  gap={2}
-                  color="gray.400"
-                  _selected={{ bg: "gray.700", color: "white" }}
-                  _hover={{ color: "white" }}
-                >
-                  <FaGlobe size={16} />
-                  MCP
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="developer"
@@ -1026,206 +1017,6 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                       )}
                     </HStack>
                   </HStack>
-                </VStack>
-              </Tabs.Content>
-
-              <Tabs.Content value="mcp" minHeight="400px" overflowY="auto">
-                <VStack align="stretch" gap={4}>
-                  <Text color="white" fontSize="lg" fontWeight="semibold">MCP & API Access</Text>
-                  
-                  {/* API Enable/Disable Section */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
-                    <VStack align="stretch" gap={3}>
-                      <VStack align="start" gap={1}>
-                        <Text color="white" fontWeight="medium" fontSize="lg">{t('settings:api.enableTitle')}</Text>
-                        <Text color="gray.400" fontSize="sm">
-                          {t('settings:api.enableDescription')}
-                        </Text>
-                      </VStack>
-                      <HStack justify="space-between" align="center">
-                        <HStack gap={2}>
-                          <Box w={2} h={2} bg={apiStatus?.running ? "green.400" : "gray.500"} borderRadius="full" />
-                          <Text 
-                            color={apiStatus?.running ? "green.400" : "gray.500"} 
-                            fontSize="sm" 
-                            fontWeight="medium"
-                          >
-                            {apiStatus?.running ? t('settings:api.running') : t('settings:api.stopped')}
-                          </Text>
-                        </HStack>
-                        <Button
-                          size="sm"
-                          colorScheme={apiEnabled ? "red" : "green"}
-                          onClick={() => handleToggleApi(!apiEnabled)}
-                          loading={isTogglingApi}
-                          disabled={isTogglingApi}
-                          minW="80px"
-                        >
-                          {apiEnabled ? t('settings:api.disable') : t('settings:api.enable')}
-                        </Button>
-                      </HStack>
-                    </VStack>
-                  </Box>
-                  
-                  {/* API URLs Section */}
-                  <Box 
-                    bg="gray.800" 
-                    p={4} 
-                    borderRadius="md" 
-                    border="1px solid" 
-                    borderColor="gray.700"
-                    opacity={apiEnabled ? 1 : 0.5}
-                    position="relative"
-                  >
-                    {!apiEnabled && (
-                      <HStack 
-                        position="absolute"
-                        top={4}
-                        right={4}
-                        gap={1}
-                      >
-                        <FaLock size={12} color="gray.500" />
-                        <Text color="gray.500" fontSize="xs" fontWeight="medium">Locked</Text>
-                      </HStack>
-                    )}
-                    <VStack align="stretch" gap={4}>
-                      <Text color="white" fontWeight="medium">API Endpoints</Text>
-                      
-                      {/* REST API */}
-                      <Box bg="gray.900" p={3} borderRadius="md">
-                        <VStack align="stretch" gap={2}>
-                          <Text color="gray.300" fontSize="sm" fontWeight="medium">REST API Documentation</Text>
-                          <HStack justify="space-between" align="center">
-                            <Link 
-                              href="http://127.0.0.1:1646/docs" 
-                              target="_blank" 
-                              fontSize="sm" 
-                              color="blue.300"
-                              _hover={{ color: "blue.200", textDecoration: "underline" }}
-                              flex="1"
-                              opacity={apiEnabled ? 1 : 0.5}
-                              pointerEvents={apiEnabled ? "auto" : "none"}
-                            >
-                              http://127.0.0.1:1646/docs
-                            </Link>
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              colorScheme={hasCopiedRest ? "green" : "blue"}
-                              aria-label="Copy REST URL to clipboard"
-                              onClick={handleCopyRest}
-                              minW="60px"
-                              disabled={!apiEnabled}
-                            >
-                              {hasCopiedRest ? (
-                                <HStack gap={1}>
-                                  <FaCheck size="10px" />
-                                  <Text fontSize="xs">Copied</Text>
-                                </HStack>
-                              ) : (
-                                <HStack gap={1}>
-                                  <FaCopy size="10px" />
-                                  <Text fontSize="xs">Copy</Text>
-                                </HStack>
-                              )}
-                            </Button>
-                          </HStack>
-                          <Text color="gray.500" fontSize="xs">
-                            Interactive API documentation and testing interface
-                          </Text>
-                        </VStack>
-                      </Box>
-
-                      {/* MCP Endpoint */}
-                      <Box bg="gray.900" p={3} borderRadius="md">
-                        <VStack align="stretch" gap={2}>
-                          <Text color="gray.300" fontSize="sm" fontWeight="medium">MCP (Model Context Protocol)</Text>
-                          <HStack justify="space-between" align="center">
-                            <Link 
-                              href="http://127.0.0.1:1646/mcp" 
-                              target="_blank" 
-                              fontSize="sm" 
-                              color="blue.300"
-                              _hover={{ color: "blue.200", textDecoration: "underline" }}
-                              flex="1"
-                              opacity={apiEnabled ? 1 : 0.5}
-                              pointerEvents={apiEnabled ? "auto" : "none"}
-                            >
-                              http://127.0.0.1:1646/mcp
-                            </Link>
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              colorScheme={hasCopiedMcp ? "green" : "blue"}
-                              aria-label="Copy MCP URL to clipboard"
-                              onClick={handleCopyMcp}
-                              minW="60px"
-                              disabled={!apiEnabled}
-                            >
-                              {hasCopiedMcp ? (
-                                <HStack gap={1}>
-                                  <FaCheck size="10px" />
-                                  <Text fontSize="xs">Copied</Text>
-                                </HStack>
-                              ) : (
-                                <HStack gap={1}>
-                                  <FaCopy size="10px" />
-                                  <Text fontSize="xs">Copy</Text>
-                                </HStack>
-                              )}
-                            </Button>
-                          </HStack>
-                          <Text color="gray.500" fontSize="xs">
-                            AI assistant integration endpoint for Claude and other LLMs
-                          </Text>
-                        </VStack>
-                      </Box>
-                    </VStack>
-                  </Box>
-
-                  {/* Status Section */}
-                  <Box 
-                    bg="gray.800" 
-                    p={4} 
-                    borderRadius="md" 
-                    border="1px solid" 
-                    borderColor="gray.700"
-                    opacity={apiEnabled ? 1 : 0.5}
-                  >
-                    <VStack align="stretch" gap={3}>
-                      <Text color="white" fontWeight="medium">{t('settings:api.serviceStatus')}</Text>
-                      <HStack justify="space-between" align="center">
-                        <Text color="gray.300" fontSize="sm">API Server</Text>
-                        <HStack gap={2}>
-                          <Box w={2} h={2} bg={apiStatus?.running ? "green.400" : "gray.500"} borderRadius="full" />
-                          <Text 
-                            color={apiStatus?.running ? "green.400" : "gray.500"} 
-                            fontSize="sm" 
-                            fontWeight="medium"
-                          >
-                            {apiStatus?.running ? t('settings:api.running') : t('settings:api.stopped')}
-                          </Text>
-                        </HStack>
-                      </HStack>
-                      <HStack justify="space-between" align="center">
-                        <Text color="gray.300" fontSize="sm">API Port</Text>
-                        <Text color="gray.300" fontSize="sm" fontFamily="mono">
-                          {apiStatus?.port || 1646}
-                        </Text>
-                      </HStack>
-                    </VStack>
-                  </Box>
-
-                  {/* Information Section */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
-                    <VStack align="stretch" gap={2}>
-                      <Text color="gray.300" fontSize="sm" fontWeight="medium">About MCP & REST API</Text>
-                      <Text color="gray.400" fontSize="xs">
-                        When enabled, the REST API provides programmatic access to your KeepKey device, while the Model Context Protocol (MCP) 
-                        allows AI assistants to help you manage your Bitcoin. The server runs locally on port 1646 and requires a restart after changing settings.
-                      </Text>
-                    </VStack>
-                  </Box>
                 </VStack>
               </Tabs.Content>
 
