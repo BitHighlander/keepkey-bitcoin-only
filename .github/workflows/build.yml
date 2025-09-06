@@ -93,122 +93,21 @@ jobs:
         working-directory: ./projects/vault-v2
         run: bun install
 
-      - name: Import Apple Certificate
+      - name: Skip Mac code signing (disabled)
         if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          CERT_PASSWORD: ${{ secrets.CERT_PW }}
         run: |
-          # Check if certificate is provided
-          if [ -z "$APPLE_CERTIFICATE" ]; then
-            echo "⚠️ APPLE_CERTIFICATE not set, skipping certificate import"
-            echo "To enable code signing, add APPLE_CERTIFICATE secret to your repository"
-            exit 0
-          fi
-          
-          echo "✅ Certificate environment variable is set"
-          echo "Certificate length: ${#APPLE_CERTIFICATE}"
-          
-          # Debug: Check first few characters (safe, won't expose the cert)
-          echo "Certificate starts with: ${APPLE_CERTIFICATE:0:20}..."
-          
-          # Create a temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-          
-          echo "Creating keychain at $KEYCHAIN_PATH"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          # Import certificate - handle potential newlines in base64
-          echo "Decoding certificate..."
-          # Remove any whitespace/newlines from the base64 string
-          echo "$APPLE_CERTIFICATE" | tr -d '\n\r ' > certificate.base64
-          
-          # Check if base64 file is valid
-          if [ ! -s certificate.base64 ]; then
-            echo "❌ Error: certificate.base64 is empty"
-            exit 1
-          fi
-          
-          echo "Base64 file size: $(wc -c < certificate.base64) bytes"
-          
-          # Decode base64 (macOS uses -D flag)
-          echo "Attempting to decode certificate..."
-          if base64 -D certificate.base64 > certificate.p12 2>/dev/null; then
-            echo "✅ Certificate decoded successfully using base64 -D"
-            ls -la certificate.p12
-          elif base64 --decode certificate.base64 > certificate.p12 2>/dev/null; then
-            echo "✅ Certificate decoded successfully using base64 --decode"
-            ls -la certificate.p12
-          else
-            echo "❌ Error: Failed to decode certificate."
-            echo "Trying alternative method..."
-            # Try with input redirection
-            if base64 -D < certificate.base64 > certificate.p12 2>/dev/null; then
-              echo "✅ Certificate decoded successfully with input redirection"
-              ls -la certificate.p12
-            else
-              echo "❌ All decode methods failed. The certificate may be corrupted."
-              exit 1
-            fi
-          fi
-          
-          # Debug password format (safely)
-          echo "=== Certificate Import Debug v2 ==="
-          echo "Checking certificate password..."
-          echo "Password length: ${#CERT_PASSWORD}"
-          echo "Password starts with: ${CERT_PASSWORD:0:3}..."
-          echo "Password ends with: ...${CERT_PASSWORD: -2}"
-          
-          # Check if password contains expected pattern
-          if [[ "$CERT_PASSWORD" == dsa* ]]; then
-            echo "✅ Password starts with expected prefix"
-          else
-            echo "⚠️ Password does NOT start with expected prefix 'dsa'"
-          fi
-          
-          # Verify certificate integrity
-          echo "Verifying certificate file..."
-          echo "Certificate MD5: $(md5 -q certificate.p12)"
-          echo "Certificate size: $(wc -c < certificate.p12) bytes"
-          
-          
-          # Import to keychain
-          echo "Importing certificate to keychain..."
-          # Use printf to handle special characters in password
-          security import certificate.p12 -k $KEYCHAIN_PATH -P "${CERT_PASSWORD}" -T /usr/bin/codesign -T /usr/bin/productsign || {
-            echo "❌ Failed to import certificate. Trying with different password format..."
-            # Try without quotes in case of escaping issues
-            security import certificate.p12 -k $KEYCHAIN_PATH -P ${CERT_PASSWORD} -T /usr/bin/codesign -T /usr/bin/productsign || {
-              echo "❌ Certificate import failed. The CERT_PW secret may be incorrect."
-              echo "Make sure CERT_PW is set to the exact password used when creating the .p12 file"
-              exit 1
-            }
-          }
-          
-          # Add keychain to search list
-          security list-keychains -d user -s $KEYCHAIN_PATH $(security list-keychains -d user | sed 's/\"//g')
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          # Verify the certificate was imported
-          echo "Verifying certificate import..."
-          security find-identity -v -p codesigning $KEYCHAIN_PATH
-          
-          # Clean up
-          rm -f certificate.p12 certificate.base64
-          
-          echo "✅ Certificate imported successfully"
+          echo "⚠️ Mac code signing and notarization DISABLED"
+          echo "Building unsigned Mac app for development/testing only"
+          echo "To enable signing, configure APPLE_CERTIFICATE and related secrets"
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Apple notarization credentials
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Disable Apple notarization (credentials not available)
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           projectPath: ./projects/vault-v2
           args: ${{ matrix.args }}
