@@ -23,27 +23,20 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn open_devtools(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
-        // In Tauri v2 with devtools feature enabled, we can open inspector
-        #[cfg(all(debug_assertions, feature = "devtools"))]
+        // In debug mode, devtools are available
+        #[cfg(debug_assertions)]
         {
             window.open_devtools();
             println!("DevTools opened");
+            return Ok(());
         }
         
-        // For release builds with devtools feature
-        #[cfg(all(not(debug_assertions), feature = "devtools"))]
+        // In release mode, devtools are not available by default
+        #[cfg(not(debug_assertions))]
         {
-            window.open_devtools();
-            println!("DevTools opened (production build with devtools enabled)");
+            println!("DevTools not available in release builds");
+            return Err("DevTools are only available in development builds. Use right-click -> Inspect Element instead.".to_string());
         }
-        
-        #[cfg(not(feature = "devtools"))]
-        {
-            println!("DevTools not available in this build - feature not enabled");
-            return Err("DevTools not available in this build. The devtools feature needs to be enabled in Cargo.toml".to_string());
-        }
-        
-        Ok(())
     } else {
         Err("Main window not found".to_string())
     }
