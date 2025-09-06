@@ -674,7 +674,7 @@ pub async fn get_device_status(
                     "operation": "get_features_for_device"
                 });
                 
-                if let Err(log_err) = log_device_response(&device_id, &request_id, false, &device_response_data, Some(&error_msg)).await {
+                if let Err(log_err) = log_device_response(&device_id, &request_id, "GetFeaturesForDevice", false, &device_response_data, Some(&error_msg)).await {
                     eprintln!("Failed to log device features error response: {}", log_err);
                 }
                 
@@ -688,7 +688,7 @@ pub async fn get_device_status(
             "operation": "get_features_for_device"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, true, &device_response_data, None).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "GetFeaturesForDevice", true, &device_response_data, None).await {
             eprintln!("Failed to log device features response: {}", e);
         }
         
@@ -701,7 +701,7 @@ pub async fn get_device_status(
             "operation": "get_device_status"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, true, &response_data, None).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "GetDeviceStatus", true, &response_data, None).await {
             eprintln!("Failed to log get device status response: {}", e);
         }
         
@@ -715,7 +715,7 @@ pub async fn get_device_status(
             "operation": "get_device_status"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, false, &error_data, Some("Device not found")).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "GetDeviceStatus", false, &error_data, Some("Device not found")).await {
             eprintln!("Failed to log device not found response: {}", e);
         }
         
@@ -773,7 +773,7 @@ pub async fn get_device_info_by_id(
                         "operation": "get_device_info_by_id"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "GetDeviceInfoById", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log get device info error response: {}", e);
                     }
                     
@@ -806,7 +806,7 @@ pub async fn get_device_info_by_id(
                 "operation": "get_device_info_by_id"
             });
             
-            if let Err(e) = log_device_response(&device_id, &request_id, true, &response_data, None).await {
+            if let Err(e) = log_device_response(&device_id, &request_id, "GetDeviceInfoById", true, &response_data, None).await {
                 eprintln!("Failed to log get device info response: {}", e);
             }
             
@@ -858,7 +858,7 @@ pub async fn get_device_info_by_id(
                     "operation": "get_device_info_by_id"
                 });
                 
-                if let Err(log_err) = log_device_response(&device_id, &request_id, false, &response_data, Some(&user_friendly_error)).await {
+                if let Err(log_err) = log_device_response(&device_id, &request_id, "GetDeviceInfoById", false, &response_data, Some(&user_friendly_error)).await {
                     eprintln!("Failed to log get device info error response: {}", log_err);
                 }
                 
@@ -875,7 +875,7 @@ pub async fn get_device_info_by_id(
                 "operation": "get_device_info_by_id"
             });
             
-            if let Err(log_err) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+            if let Err(log_err) = log_device_response(&device_id, &request_id, "GetDeviceInfoById", false, &response_data, Some(&error)).await {
                 eprintln!("Failed to log get device info error response: {}", log_err);
             }
             
@@ -937,7 +937,7 @@ pub async fn wipe_device(
                         "operation": "wipe_device"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "WipeDevice", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log wipe device error response: {}", e);
                     }
                     
@@ -984,7 +984,7 @@ pub async fn wipe_device(
                         "operation": "wipe_device"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, true, &response_data, None).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "WipeDevice", true, &response_data, None).await {
                         eprintln!("Failed to log wipe device response: {}", e);
                     }
                     
@@ -1000,7 +1000,7 @@ pub async fn wipe_device(
                         "operation": "wipe_device"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "WipeDevice", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log wipe device error response: {}", e);
                     }
                     
@@ -1016,7 +1016,7 @@ pub async fn wipe_device(
                         "operation": "wipe_device"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "WipeDevice", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log wipe device error response: {}", e);
                     }
                     
@@ -1034,7 +1034,7 @@ pub async fn wipe_device(
                 "operation": "wipe_device"
             });
             
-            if let Err(log_err) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+            if let Err(log_err) = log_device_response(&device_id, &request_id, "WipeDevice", false, &response_data, Some(&error)).await {
                 eprintln!("Failed to log wipe device error response: {}", log_err);
             }
             
@@ -1075,7 +1075,7 @@ pub async fn set_device_label(
             "operation": "set_device_label"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "SetDeviceLabel", false, &response_data, Some(&error)).await {
             eprintln!("Failed to log set device label validation error: {}", e);
         }
         
@@ -1091,7 +1091,7 @@ pub async fn set_device_label(
             "operation": "set_device_label"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "SetDeviceLabel", false, &response_data, Some(&error)).await {
             eprintln!("Failed to log set device label validation error: {}", e);
         }
         
@@ -1127,7 +1127,7 @@ pub async fn set_device_label(
                         "operation": "set_device_label"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "SetDeviceLabel", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log set device label error response: {}", e);
                     }
                     
@@ -1183,7 +1183,7 @@ pub async fn set_device_label(
                         "operation": "set_device_label"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, true, &response_data, None).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "SetDeviceLabel", true, &response_data, None).await {
                         eprintln!("Failed to log set device label response: {}", e);
                     }
                     
@@ -1199,7 +1199,7 @@ pub async fn set_device_label(
                         "operation": "set_device_label"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "SetDeviceLabel", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log set device label error response: {}", e);
                     }
                     
@@ -1215,7 +1215,7 @@ pub async fn set_device_label(
                         "operation": "set_device_label"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "SetDeviceLabel", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log set device label error response: {}", e);
                     }
                     
@@ -1233,7 +1233,7 @@ pub async fn set_device_label(
                 "operation": "set_device_label"
             });
             
-            if let Err(log_err) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+            if let Err(log_err) = log_device_response(&device_id, &request_id, "SetDeviceLabel", false, &response_data, Some(&error)).await {
                 eprintln!("Failed to log set device label error response: {}", log_err);
             }
             
@@ -1351,7 +1351,7 @@ pub async fn get_connected_devices_with_features(
                                 "operation": "get_features_for_device"
                             });
                             
-                            if let Err(e) = log_device_response(&device_id, &device_request_id, true, &device_response_data, None).await {
+                            if let Err(e) = log_device_response(&device_id, &device_request_id, "GetFeaturesForDevice", true, &device_response_data, None).await {
                                 eprintln!("Failed to log device features response: {}", e);
                             }
                             
@@ -1389,7 +1389,7 @@ pub async fn get_connected_devices_with_features(
                         "operation": "get_features_for_device"
                     });
                     
-                    if let Err(log_err) = log_device_response(&device_id, &device_request_id, false, &device_response_data, Some(&error_msg)).await {
+                    if let Err(log_err) = log_device_response(&device_id, &device_request_id, "GetFeaturesForDevice", false, &device_response_data, Some(&error_msg)).await {
                         eprintln!("Failed to log device features error response: {}", log_err);
                     }
                     
@@ -1436,7 +1436,7 @@ pub async fn get_connected_devices_with_features(
         "operation": "get_connected_devices_with_features"
     });
     
-    if let Err(e) = log_device_response("all", &request_id, true, &response_data, None).await {
+    if let Err(e) = log_device_response("all", &request_id, "GetConnectedDevicesWithFeatures", true, &response_data, None).await {
         eprintln!("Failed to log get connected devices response: {}", e);
     }
     

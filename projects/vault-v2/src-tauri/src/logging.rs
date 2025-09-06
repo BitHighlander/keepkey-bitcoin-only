@@ -96,6 +96,7 @@ impl DeviceLogger {
         &self,
         device_id: &str,
         request_id: &str,
+        request_type: &str,
         success: bool,
         response_data: &serde_json::Value,
         error: Option<&str>,
@@ -107,6 +108,7 @@ impl DeviceLogger {
             "direction": "RESPONSE",
             "device_id": device_id,
             "request_id": request_id,
+            "request_type": request_type,
             "success": success,
             "data": response_data,
             "error": error
@@ -269,12 +271,13 @@ pub async fn log_device_request(
 pub async fn log_device_response(
     device_id: &str,
     request_id: &str,
+    request_type: &str,
     success: bool,
     response_data: &serde_json::Value,
     error: Option<&str>,
 ) -> Result<(), String> {
     let logger = get_device_logger();
-    logger.log_response(device_id, request_id, success, response_data, error).await
+    logger.log_response(device_id, request_id, request_type, success, response_data, error).await
 }
 
 /// Helper function to log a raw device message

@@ -865,6 +865,7 @@ pub async fn add_to_device_queue(
             if let Err(e) = crate::logging::log_device_response(
                 &request.device_id,
                 &request.request_id,
+                &request_type,
                 true,
                 &response_data,
                 None
@@ -885,6 +886,7 @@ pub async fn add_to_device_queue(
             if let Err(log_err) = crate::logging::log_device_response(
                 &request.device_id,
                 &request.request_id,
+                &request_type,
                 false,
                 &error_data,
                 Some(e)

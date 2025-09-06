@@ -154,7 +154,7 @@ pub async fn update_device_bootloader(
             "operation": "update_device_bootloader"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error_msg)).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceBootloader", false, &response_data, Some(&error_msg)).await {
             eprintln!("Failed to log bootloader update error response: {}", e);
         }
         
@@ -192,7 +192,7 @@ pub async fn update_device_bootloader(
                         "operation": "update_device_bootloader"
                     });
                     
-                    if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                    if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceBootloader", false, &response_data, Some(&error)).await {
                         eprintln!("Failed to log bootloader update error response: {}", e);
                     }
                     
@@ -214,7 +214,7 @@ pub async fn update_device_bootloader(
                     "operation": "update_device_bootloader"
                 });
                 
-                if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceBootloader", false, &response_data, Some(&error)).await {
                     eprintln!("Failed to log bootloader update error response: {}", e);
                 }
                 
@@ -247,7 +247,7 @@ pub async fn update_device_bootloader(
                     "operation": "update_device_bootloader"
                 });
                 
-                if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceBootloader", false, &response_data, Some(&error)).await {
                     eprintln!("Failed to log bootloader update error response: {}", e);
                 }
                 
@@ -275,7 +275,7 @@ pub async fn update_device_bootloader(
                 "operation": "update_device_bootloader"
             });
             
-            if let Err(e) = log_device_response(&device_id, &request_id, true, &response_data, None).await {
+            if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceBootloader", true, &response_data, None).await {
                 eprintln!("Failed to log bootloader update success response: {}", e);
             }
             
@@ -306,7 +306,7 @@ pub async fn update_device_bootloader(
                 "operation": "update_device_bootloader"
             });
             
-            if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error_msg)).await {
+            if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceBootloader", false, &response_data, Some(&error_msg)).await {
                 eprintln!("Failed to log bootloader update error response: {}", e);
             }
             
@@ -456,7 +456,7 @@ pub async fn update_device_firmware(
             "operation": "update_device_firmware"
         });
         
-        if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error_msg)).await {
+        if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", false, &response_data, Some(&error_msg)).await {
             eprintln!("Failed to log firmware update error response: {}", e);
         }
         
@@ -523,7 +523,7 @@ pub async fn update_device_firmware(
                             "operation": "update_device_firmware"
                         });
                         
-                        if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                        if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", false, &response_data, Some(&error)).await {
                             eprintln!("Failed to log firmware update error response: {}", e);
                         }
                         
@@ -547,7 +547,7 @@ pub async fn update_device_firmware(
                     "operation": "update_device_firmware"
                 });
                 
-                if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", false, &response_data, Some(&error)).await {
                     eprintln!("Failed to log firmware update error response: {}", e);
                 }
                 
@@ -580,7 +580,7 @@ pub async fn update_device_firmware(
                     "operation": "update_device_firmware"
                 });
                 
-                if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+                if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", false, &response_data, Some(&error)).await {
                     eprintln!("Failed to log firmware update error response: {}", e);
                 }
                 
@@ -593,7 +593,7 @@ pub async fn update_device_firmware(
                 "error": error,
                 "operation": "update_device_firmware"
             });
-            if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error)).await {
+            if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", false, &response_data, Some(&error)).await {
                 eprintln!("Failed to log firmware update timeout response: {}", e);
             }
             return Err(error);
@@ -618,7 +618,7 @@ pub async fn update_device_firmware(
                 "operation": "update_device_firmware"
             });
             
-            if let Err(e) = log_device_response(&device_id, &request_id, true, &response_data, None).await {
+            if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", true, &response_data, None).await {
                 eprintln!("Failed to log firmware update success response: {}", e);
             }
             
@@ -642,7 +642,7 @@ pub async fn update_device_firmware(
                 "operation": "update_device_firmware"
             });
             
-            if let Err(e) = log_device_response(&device_id, &request_id, false, &response_data, Some(&error_msg)).await {
+            if let Err(e) = log_device_response(&device_id, &request_id, "UpdateDeviceFirmware", false, &response_data, Some(&error_msg)).await {
                 eprintln!("Failed to log firmware update error response: {}", e);
             }
             
