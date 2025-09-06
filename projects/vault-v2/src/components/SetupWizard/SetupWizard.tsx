@@ -302,6 +302,13 @@ export function SetupWizard({ deviceId: initialDeviceId, onClose, onComplete, on
   
   // Debug current step
   console.log("SetupWizard render - currentStep:", currentStep, "stepId:", effectiveAllSteps[currentStep].id, "component:", StepComponent.name);
+  console.log("SetupWizard render - props being passed:", {
+    deviceId,
+    wizardData,
+    flowType,
+    currentStep,
+    effectiveStepsLength: effectiveAllSteps.length
+  });
 
   // Global Enter -> Next handler (except guarded steps)
   useEffect(() => {

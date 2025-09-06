@@ -16,6 +16,7 @@ import { useWallet } from './contexts/WalletContext';
 import { useDialog } from './contexts/DialogContext';
 import { useDeviceInteraction } from './hooks/useDeviceInteraction';
 import { OnboardingGateProvider, useOnboardingGate } from './contexts/OnboardingGateContext';
+import { DebugPanel } from './components/DebugPanel';
 
 // Define the expected structure of DeviceFeatures from Rust
 interface DeviceFeatures {
@@ -683,6 +684,9 @@ function App() {
                 }}
                 onSetupWizardActiveChange={setSetupWizardActive}
               />
+              
+              {/* Debug panel for logging (Ctrl+Shift+D to toggle) */}
+              <DebugPanel />
 
               {/* REST and MCP links in bottom right corner */}
               {/*<Box*/}

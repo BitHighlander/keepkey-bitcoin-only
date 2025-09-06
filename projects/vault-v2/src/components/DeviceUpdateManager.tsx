@@ -4,12 +4,14 @@ import { FirmwareUpdateDialog } from './FirmwareUpdateDialog'
 import { SetupWizard } from './SetupWizard'
 import { EnterBootloaderModeDialog } from './EnterBootloaderModeDialog'
 import { PinUnlockDialog } from './PinUnlockDialog'
+import { ErrorBoundary } from './ErrorBoundary'
 import type { DeviceStatus, DeviceFeatures } from '../types/device'
 import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useWallet } from '../contexts/WalletContext'
 import { useDeviceInvalidStateDialog, usePinPassphraseDialog } from '../contexts/DialogContext'
 import { useOnboardingGate } from '../contexts/OnboardingGateContext'
+import { deviceLogger, LogCategory, logDevice, logDeviceError, logStateChange } from '../utils/deviceLogger'
 
 interface DeviceUpdateManagerProps {
   // Optional callback when all updates/setup is complete
@@ -19,6 +21,8 @@ interface DeviceUpdateManagerProps {
 }
 
 export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: DeviceUpdateManagerProps) => {
+  // Start correlation for this device manager session
+  const sessionCorrelationId = deviceLogger.startCorrelation();
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus | null>(null)
   const [showEnterBootloaderMode, setShowEnterBootloaderMode] = useState(false)
   const [showBootloaderUpdate, setShowBootloaderUpdate] = useState(false)
@@ -84,6 +88,18 @@ export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: D
 
   // Function to handle device status and determine which dialog to show
   const handleDeviceStatus = (status: DeviceStatus) => {
+    const correlationId = deviceLogger.startCorrelation();
+    
+    deviceLogger.info(LogCategory.DEVICE_CONNECTION, 'Handling device status', {
+      deviceId: status.deviceId,
+      needsInitialization: status.needsInitialization,
+      needsFirmwareUpdate: status.needsFirmwareUpdate,
+      needsBootloaderUpdate: status.needsBootloaderUpdate,
+      needsPinUnlock: status.needsPinUnlock,
+      features: status.features,
+      correlationId
+    });
+    
     console.log('🔧 DeviceUpdateManager: Handling device status:', status)
     console.log('🔧 DeviceUpdateManager: Status needs_initialization:', status.needsInitialization)
     console.log('🔧 DeviceUpdateManager: Status needs_firmware_update:', status.needsFirmwareUpdate)
@@ -273,6 +289,7 @@ export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: D
         features: DeviceFeatures
         status: DeviceStatus
       }>('device:features-updated', (event) => {
+        deviceLogger.logEvent('received', 'device:features-updated', event.payload);
         console.log('🔧 DeviceUpdateManager: Device features updated event received:', event.payload)
         const { status } = event.payload
         console.log('🔧 DeviceUpdateManager: Extracted status from event:', status)
@@ -280,6 +297,12 @@ export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: D
         // If we just completed a bootloader update and setup is in progress,
         // update the persistent device ID to the new one
         if (justCompletedBootloaderUpdate.current && setupInProgress && status.deviceId !== persistentDeviceId) {
+          deviceLogger.warn(LogCategory.DEVICE_ID, 'Device ID changed after bootloader update', {
+            oldId: persistentDeviceId,
+            newId: status.deviceId,
+            reason: 'bootloader_update',
+            setupInProgress
+          });
           console.log('🔄 Device ID changed after bootloader update:', {
             oldId: persistentDeviceId,
             newId: status.deviceId
@@ -336,6 +359,14 @@ export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: D
         is_keepkey: boolean
       }>('device:connected', (event) => {
         const device = event.payload
+        deviceLogger.logEvent('received', 'device:connected', device);
+        deviceLogger.info(LogCategory.DEVICE_CONNECTION, 'Device connected (fallback)', {
+          uniqueId: device.unique_id,
+          vid: device.vid,
+          pid: device.pid,
+          serialNumber: device.serial_number,
+          isKeepKey: device.is_keepkey
+        });
         console.log('Device connected event received (fallback):', device)
         
         if (device.is_keepkey) {
@@ -373,11 +404,31 @@ export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: D
         errorType: string
         status: string
       }>('device:invalid-state', (event) => {
+        deviceLogger.logEvent('received', 'device:invalid-state', event.payload);
+        deviceLogger.warn(LogCategory.DEVICE_CONNECTION, 'Device invalid state detected', {
+          deviceId: event.payload.deviceId,
+          error: event.payload.error,
+          errorType: event.payload.errorType,
+          currentDeviceId: connectedDeviceId,
+          persistentDeviceId,
+          setupWizardActive: setupWizardActive.current,
+          setupInProgress,
+          showWalletCreation,
+          firmwareUpdateInProgress: firmwareUpdateInProgress.current
+        });
         console.log('⏱️ Device invalid state detected:', event.payload)
         
         // CRITICAL: If setup is in progress, IGNORE invalid state errors
         // This happens during firmware updates when device reboots
         if (setupWizardActive.current || setupInProgress || showWalletCreation || firmwareUpdateInProgress.current) {
+          deviceLogger.info(LogCategory.DEVICE_CONNECTION, 'Ignoring invalid state during setup - device may be rebooting', {
+            protectionFlags: {
+              setupWizardActive: setupWizardActive.current,
+              setupInProgress,
+              showWalletCreation,
+              firmwareUpdateInProgress: firmwareUpdateInProgress.current
+            }
+          });
           console.log('🛡️🛡️ IGNORING invalid state during setup - device is rebooting')
           console.log('🛡️ Setup/Update must continue, not showing invalid state dialog')
           console.log('🛡️ Protection flags:', {
@@ -853,30 +904,32 @@ export const DeviceUpdateManager = ({ onComplete, onSetupWizardActiveChange }: D
       )}
 
       {showWalletCreation && (persistentDeviceId || deviceStatus?.deviceId) && (
-        <SetupWizard
-          deviceId={persistentDeviceId || deviceStatus?.deviceId || ''}
-          onComplete={handleWalletCreationComplete}
-          onClose={() => {
-            // NOTE: onClose should only be called when user explicitly cancels
-            // NOT when device disconnects
-            console.log('⚠️ SetupWizard onClose called - user cancelled setup')
-            setShowWalletCreation(false)
-            setupWizardActive.current = false
-            setupWizardDeviceId.current = null
-            setPersistentDeviceId(null)
-            setSetupInProgress(false) // Clear setup in progress only on explicit close
-            firmwareUpdateInProgress.current = false // Also clear firmware update flag
-            onSetupWizardActiveChange?.(false)
-          }}
-          onFirmwareUpdateStart={() => {
-            console.log('🔄 Firmware update starting in setup wizard')
-            firmwareUpdateInProgress.current = true
-          }}
-          onFirmwareUpdateComplete={() => {
-            console.log('✅ Firmware update complete in setup wizard')
-            firmwareUpdateInProgress.current = false
-          }}
-        />
+        <ErrorBoundary componentName="SetupWizard">
+          <SetupWizard
+            deviceId={persistentDeviceId || deviceStatus?.deviceId || ''}
+            onComplete={handleWalletCreationComplete}
+            onClose={() => {
+              // NOTE: onClose should only be called when user explicitly cancels
+              // NOT when device disconnects
+              console.log('⚠️ SetupWizard onClose called - user cancelled setup')
+              setShowWalletCreation(false)
+              setupWizardActive.current = false
+              setupWizardDeviceId.current = null
+              setPersistentDeviceId(null)
+              setSetupInProgress(false) // Clear setup in progress only on explicit close
+              firmwareUpdateInProgress.current = false // Also clear firmware update flag
+              onSetupWizardActiveChange?.(false)
+            }}
+            onFirmwareUpdateStart={() => {
+              console.log('🔄 Firmware update starting in setup wizard')
+              firmwareUpdateInProgress.current = true
+            }}
+            onFirmwareUpdateComplete={() => {
+              console.log('✅ Firmware update complete in setup wizard')
+              firmwareUpdateInProgress.current = false
+            }}
+          />
+        </ErrorBoundary>
       )}
 
       {/* PinUnlockDialog is centrally managed by DialogContext via WalletContext events */}
