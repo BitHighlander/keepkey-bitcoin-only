@@ -8,7 +8,7 @@ import {
   DialogCloseTrigger
 } from './ui/dialog'
 import { LuSettings, LuMonitor, LuCpu, LuNetwork, LuFileText } from 'react-icons/lu'
-import { FaCog, FaLink, FaCopy, FaCheck, FaTimes, FaUsb, FaLock, FaGlobe, FaDollarSign, FaDownload, FaTrash, FaSyncAlt, FaSearch, FaFilter, FaFolder, FaBitcoin } from 'react-icons/fa'
+import { FaLink, FaCopy, FaCheck, FaTimes, FaUsb, FaLock, FaGlobe, FaDollarSign, FaDownload, FaTrash, FaSyncAlt, FaSearch, FaFilter, FaFolder, FaBitcoin, FaCog } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from './LanguageSwitcher'
@@ -1254,10 +1254,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                           }
                         }}
                       >
-                        <HStack gap={2}>
-                          <FaCog />
-                          <Text>Open DevTools</Text>
-                        </HStack>
+                        Open DevTools
                       </Button>
                     </VStack>
                   </Box>
