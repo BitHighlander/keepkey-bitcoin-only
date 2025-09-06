@@ -1246,7 +1246,6 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                       <Button
                         size="md"
                         colorScheme="blue"
-                        leftIcon={<FaCog />}
                         onClick={async () => {
                           try {
                             await invoke('open_devtools');
@@ -1255,7 +1254,10 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                           }
                         }}
                       >
-                        Open DevTools
+                        <HStack gap={2}>
+                          <FaCog />
+                          <Text>Open DevTools</Text>
+                        </HStack>
                       </Button>
                     </VStack>
                   </Box>
