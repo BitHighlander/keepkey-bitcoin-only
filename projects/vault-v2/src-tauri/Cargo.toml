@@ -22,7 +22,7 @@ lazy_static = "1.4"
 base58 = "0.2"
 sha2 = "0.10"
 keepkey_rust = { path = "../../keepkey-rust" }
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

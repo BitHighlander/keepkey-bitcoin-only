@@ -355,6 +355,10 @@ jobs:
         run: |
           echo "Checking for built artifacts to upload..."
           
+          # Extract version from package.json
+          VERSION=$(cat projects/vault-v2/package.json | grep '"version"' | sed 's/.*"version": "\(.*\)".*/\1/')
+          echo "Version: $VERSION"
+          
           # Function to upload a file to the release
           upload_asset() {
             local file="$1"
@@ -432,13 +436,40 @@ jobs:
               done
               ;;
             "Windows-x64")
-              # Check both possible locations for Windows files
+              echo "Looking for Windows artifacts..."
+              
+              # Upload NSIS installer (.exe)
               for file in projects/vault-v2/src-tauri/target/release/bundle/nsis/*.exe projects/vault-v2/target/release/bundle/nsis/*.exe; do
-                [ -f "$file" ] && upload_asset "$file"
+                if [ -f "$file" ]; then
+                  echo "Found NSIS installer: $file"
+                  upload_asset "$file"
+                fi
               done
+              
+              # Upload MSI installer
               for file in projects/vault-v2/src-tauri/target/release/bundle/msi/*.msi projects/vault-v2/target/release/bundle/msi/*.msi; do
-                [ -f "$file" ] && upload_asset "$file"
+                if [ -f "$file" ]; then
+                  echo "Found MSI installer: $file"
+                  upload_asset "$file"
+                fi
               done
+              
+              # Upload plain .exe (the actual executable without installer)
+              if [ -f "projects/vault-v2/src-tauri/target/release/vault-v2.exe" ]; then
+                echo "Found plain executable: projects/vault-v2/src-tauri/target/release/vault-v2.exe"
+                # Rename it to distinguish from installer
+                cp "projects/vault-v2/src-tauri/target/release/vault-v2.exe" "vault-v2_${VERSION}_x64_portable.exe"
+                upload_asset "vault-v2_${VERSION}_x64_portable.exe"
+                rm -f "vault-v2_${VERSION}_x64_portable.exe"
+              elif [ -f "projects/vault-v2/target/release/vault-v2.exe" ]; then
+                echo "Found plain executable: projects/vault-v2/target/release/vault-v2.exe"
+                # Rename it to distinguish from installer
+                cp "projects/vault-v2/target/release/vault-v2.exe" "vault-v2_${VERSION}_x64_portable.exe"
+                upload_asset "vault-v2_${VERSION}_x64_portable.exe"
+                rm -f "vault-v2_${VERSION}_x64_portable.exe"
+              else
+                echo "Plain .exe not found in expected locations"
+              fi
               ;;
             "Linux-AppImage")
               # Check both possible locations for Linux files

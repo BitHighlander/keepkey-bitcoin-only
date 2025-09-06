@@ -665,6 +665,17 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                   <FaGlobe size={16} />
                   MCP
                 </Tabs.Trigger>
+                <Tabs.Trigger 
+                  value="developer"
+                  flex="1"
+                  gap={2}
+                  color="gray.400"
+                  _selected={{ bg: "gray.700", color: "white" }}
+                  _hover={{ color: "white" }}
+                >
+                  <FaCog size={16} />
+                  Developer
+                </Tabs.Trigger>
               </Tabs.List>
 
               <Tabs.Content value="general" minHeight="400px" overflowY="auto">
@@ -1212,6 +1223,81 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                       <Text color="gray.400" fontSize="xs">
                         When enabled, the REST API provides programmatic access to your KeepKey device, while the Model Context Protocol (MCP) 
                         allows AI assistants to help you manage your Bitcoin. The server runs locally on port 1646 and requires a restart after changing settings.
+                      </Text>
+                    </VStack>
+                  </Box>
+                </VStack>
+              </Tabs.Content>
+
+              <Tabs.Content value="developer" minHeight="400px" overflowY="auto">
+                <VStack align="stretch" gap={4}>
+                  <Text color="white" fontSize="lg" fontWeight="semibold">Developer Tools</Text>
+                  
+                  {/* DevTools Section */}
+                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                    <VStack align="stretch" gap={3}>
+                      <VStack align="start" gap={1}>
+                        <Text color="white" fontWeight="medium" fontSize="lg">Browser DevTools</Text>
+                        <Text color="gray.400" fontSize="sm">
+                          Open the browser developer tools to inspect and debug the application. This includes the console, 
+                          network monitor, and element inspector.
+                        </Text>
+                      </VStack>
+                      <Button
+                        size="md"
+                        colorScheme="blue"
+                        leftIcon={<FaCog />}
+                        onClick={async () => {
+                          try {
+                            await invoke('open_devtools');
+                          } catch (error) {
+                            console.error('Failed to open devtools:', error);
+                          }
+                        }}
+                      >
+                        Open DevTools
+                      </Button>
+                    </VStack>
+                  </Box>
+
+                  {/* Debug Info Section */}
+                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                    <VStack align="stretch" gap={3}>
+                      <VStack align="start" gap={1}>
+                        <Text color="white" fontWeight="medium" fontSize="lg">Debug Information</Text>
+                        <Text color="gray.400" fontSize="sm">
+                          Application version and build information for debugging purposes.
+                        </Text>
+                      </VStack>
+                      <VStack align="start" gap={1} fontSize="sm">
+                        <HStack>
+                          <Text color="gray.500">Version:</Text>
+                          <Text color="white">0.2.12</Text>
+                        </HStack>
+                        <HStack>
+                          <Text color="gray.500">Platform:</Text>
+                          <Text color="white">{window.navigator.platform}</Text>
+                        </HStack>
+                        <HStack>
+                          <Text color="gray.500">User Agent:</Text>
+                          <Text color="white" fontSize="xs" wordBreak="break-all">
+                            {window.navigator.userAgent}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                    </VStack>
+                  </Box>
+
+                  {/* Warning Section */}
+                  <Box bg="yellow.900" p={4} borderRadius="md" border="1px solid" borderColor="yellow.700">
+                    <VStack align="start" gap={2}>
+                      <HStack>
+                        <Icon color="yellow.400">⚠️</Icon>
+                        <Text color="yellow.400" fontWeight="medium">Developer Mode Active</Text>
+                      </HStack>
+                      <Text color="yellow.200" fontSize="sm">
+                        Developer tools are enabled in this build. This may impact performance and security. 
+                        Only use developer tools if you understand the risks.
                       </Text>
                     </VStack>
                   </Box>
