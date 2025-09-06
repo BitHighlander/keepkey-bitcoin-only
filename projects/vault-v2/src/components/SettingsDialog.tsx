@@ -1291,7 +1291,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                   <Box bg="yellow.900" p={4} borderRadius="md" border="1px solid" borderColor="yellow.700">
                     <VStack align="start" gap={2}>
                       <HStack>
-                        <Icon color="yellow.400">⚠️</Icon>
+                        <Text color="yellow.400" fontSize="lg">⚠️</Text>
                         <Text color="yellow.400" fontWeight="medium">Developer Mode Active</Text>
                       </HStack>
                       <Text color="yellow.200" fontSize="sm">
