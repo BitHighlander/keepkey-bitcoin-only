@@ -570,7 +570,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
     <>
       <DialogRoot open={isOpen} onOpenChange={({ open }) => !open && onClose()}>
         <DialogContent 
-          width="600px"
+          width="900px"
           height="700px"
           bg="gray.900" 
           color="white"
@@ -592,80 +592,86 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
           }}
         >
           <DialogHeader borderBottomWidth="1px" borderColor="gray.700" pb={4} mb={4}>
-            <HStack justifyContent="space-between" width="100%">
-              <DialogTitle color="white" fontSize="xl" fontWeight="bold">{t('settings:title')}</DialogTitle>
-              <DialogCloseTrigger color="gray.400" _hover={{ color: "white" }}>
-                <FaTimes />
+            <Flex justifyContent="space-between" alignItems="center" width="100%">
+              <DialogTitle color="white" fontSize="2xl" fontWeight="bold">{t('settings:title')}</DialogTitle>
+              <DialogCloseTrigger color="gray.400" _hover={{ color: "white" }} p={2}>
+                <FaTimes size={20} />
               </DialogCloseTrigger>
-            </HStack>
+            </Flex>
           </DialogHeader>
           
           <DialogBody p={6} flex="1" overflowY="auto">
             <Tabs.Root defaultValue="general">
-              <Tabs.List bg="gray.800" borderRadius="md" p={1} mb={6}>
+              <Tabs.List bg="gray.800" borderRadius="md" p={2} mb={6}>
                 <Tabs.Trigger 
                   value="general"
                   flex="1"
                   gap={2}
+                  py={3}
+                  px={4}
                   color="gray.400"
                   _selected={{ bg: "gray.700", color: "white" }}
                   _hover={{ color: "white" }}
+                  transition="all 0.2s"
                 >
-                  <LuSettings size={16} />
-                  {t('settings:tabs.general')}
+                  <LuSettings size={18} />
+                  <Text fontSize="sm" fontWeight="medium">{t('settings:tabs.general')}</Text>
                 </Tabs.Trigger>
-                {/*<Tabs.Trigger */}
-                {/*  value="app"*/}
-                {/*  flex="1"*/}
-                {/*  gap={2}*/}
-                {/*  color="gray.400"*/}
-                {/*  _selected={{ bg: "gray.700", color: "white" }}*/}
-                {/*  _hover={{ color: "white" }}*/}
-                {/*>*/}
-                {/*  <LuMonitor size={16} />*/}
-                {/*  App*/}
-                {/*</Tabs.Trigger>*/}
                 <Tabs.Trigger 
                   value="bitcoin"
                   flex="1"
                   gap={2}
+                  py={3}
+                  px={4}
                   color="gray.400"
                   _selected={{ bg: "gray.700", color: "white" }}
                   _hover={{ color: "white" }}
+                  transition="all 0.2s"
                 >
-                  Bitcoin
+                  <FaBitcoin size={18} />
+                  <Text fontSize="sm" fontWeight="medium">Bitcoin</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="keepkey"
                   flex="1"
                   gap={2}
+                  py={3}
+                  px={4}
                   color="gray.400"
                   _selected={{ bg: "gray.700", color: "white" }}
                   _hover={{ color: "white" }}
+                  transition="all 0.2s"
                 >
-                KeepKey
+                  <FaUsb size={18} />
+                  <Text fontSize="sm" fontWeight="medium">KeepKey</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="logs"
                   flex="1"
                   gap={2}
+                  py={3}
+                  px={4}
                   color="gray.400"
                   _selected={{ bg: "gray.700", color: "white" }}
                   _hover={{ color: "white" }}
+                  transition="all 0.2s"
                 >
-                  <LuFileText size={16} />
-                  Logs
+                  <LuFileText size={18} />
+                  <Text fontSize="sm" fontWeight="medium">Logs</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="developer"
                   flex="1"
                   gap={2}
+                  py={3}
+                  px={4}
                   color="gray.400"
                   _selected={{ bg: "gray.700", color: "white" }}
                   _hover={{ color: "white" }}
+                  transition="all 0.2s"
                 >
-                  <FaCog size={16} />
-                  Developer
+                  <FaCog size={18} />
+                  <Text fontSize="sm" fontWeight="medium">Developer</Text>
                 </Tabs.Trigger>
               </Tabs.List>
 
