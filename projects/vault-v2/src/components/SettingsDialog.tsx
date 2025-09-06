@@ -570,117 +570,216 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
     <>
       <DialogRoot open={isOpen} onOpenChange={({ open }) => !open && onClose()}>
         <DialogContent 
-          width="900px"
-          height="700px"
-          bg="gray.900" 
+          width="1000px"
+          maxWidth="90vw"
+          height="750px"
+          maxHeight="90vh"
+          bg="linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%)" 
           color="white"
-          border="2px solid"
-          borderColor="gray.600"
-          boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 8px 16px -8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
-          borderRadius="xl"
+          border="1px solid"
+          borderColor="rgba(255, 255, 255, 0.1)"
+          boxShadow="0 20px 60px rgba(0, 0, 0, 0.8), 0 0 120px rgba(76, 175, 80, 0.1)"
+          borderRadius="2xl"
           position="relative"
-          _before={{
-            content: '""',
-            position: "absolute",
-            top: "-1px",
-            left: "-1px",
-            right: "-1px",
-            bottom: "-1px",
-            background: "linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1))",
-            borderRadius: "xl",
-            zIndex: -1,
-          }}
+          overflow="hidden"
         >
-          <DialogHeader borderBottomWidth="1px" borderColor="gray.700" pb={4} mb={4}>
+          <DialogHeader 
+            borderBottomWidth="1px" 
+            borderColor="rgba(255, 255, 255, 0.1)" 
+            bg="rgba(255, 255, 255, 0.02)"
+            backdropFilter="blur(10px)"
+            px={8}
+            py={6}
+          >
             <Flex justifyContent="space-between" alignItems="center" width="100%">
-              <DialogTitle color="white" fontSize="2xl" fontWeight="bold">{t('settings:title')}</DialogTitle>
-              <DialogCloseTrigger color="gray.400" _hover={{ color: "white" }} p={2}>
-                <FaTimes size={20} />
+              <HStack gap={3}>
+                <Box 
+                  p={2} 
+                  bg="green.500" 
+                  borderRadius="lg"
+                  boxShadow="0 0 20px rgba(76, 175, 80, 0.3)"
+                >
+                  <LuSettings size={20} color="white" />
+                </Box>
+                <DialogTitle color="white" fontSize="2xl" fontWeight="600" letterSpacing="tight">
+                  {t('settings:title')}
+                </DialogTitle>
+              </HStack>
+              <DialogCloseTrigger 
+                color="gray.500" 
+                _hover={{ 
+                  color: "white", 
+                  bg: "rgba(255, 255, 255, 0.1)",
+                  transform: "rotate(90deg)"
+                }} 
+                p={2}
+                borderRadius="lg"
+                transition="all 0.3s"
+              >
+                <FaTimes size={18} />
               </DialogCloseTrigger>
             </Flex>
           </DialogHeader>
           
-          <DialogBody p={6} flex="1" overflowY="auto">
+          <DialogBody px={8} py={6} flex="1" overflowY="auto">
             <Tabs.Root defaultValue="general">
-              <Tabs.List bg="gray.800" borderRadius="md" p={2} mb={6}>
+              <Tabs.List 
+                bg="rgba(255, 255, 255, 0.03)" 
+                borderRadius="xl" 
+                p={1} 
+                mb={8}
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.06)"
+              >
                 <Tabs.Trigger 
                   value="general"
                   flex="1"
-                  gap={2}
+                  gap={3}
                   py={3}
                   px={4}
-                  color="gray.400"
-                  _selected={{ bg: "gray.700", color: "white" }}
-                  _hover={{ color: "white" }}
-                  transition="all 0.2s"
+                  color="gray.500"
+                  borderRadius="lg"
+                  fontWeight="500"
+                  _selected={{ 
+                    bg: "rgba(76, 175, 80, 0.15)", 
+                    color: "green.400",
+                    borderColor: "green.500",
+                    border: "1px solid",
+                    boxShadow: "0 0 20px rgba(76, 175, 80, 0.2)"
+                  }}
+                  _hover={{ 
+                    color: "gray.300",
+                    bg: "rgba(255, 255, 255, 0.05)" 
+                  }}
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 >
-                  <LuSettings size={18} />
-                  <Text fontSize="sm" fontWeight="medium">{t('settings:tabs.general')}</Text>
+                  <LuSettings size={16} />
+                  <Text fontSize="sm">{t('settings:tabs.general')}</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="bitcoin"
                   flex="1"
-                  gap={2}
+                  gap={3}
                   py={3}
                   px={4}
-                  color="gray.400"
-                  _selected={{ bg: "gray.700", color: "white" }}
-                  _hover={{ color: "white" }}
-                  transition="all 0.2s"
+                  color="gray.500"
+                  borderRadius="lg"
+                  fontWeight="500"
+                  _selected={{ 
+                    bg: "rgba(76, 175, 80, 0.15)", 
+                    color: "green.400",
+                    borderColor: "green.500",
+                    border: "1px solid",
+                    boxShadow: "0 0 20px rgba(76, 175, 80, 0.2)"
+                  }}
+                  _hover={{ 
+                    color: "gray.300",
+                    bg: "rgba(255, 255, 255, 0.05)" 
+                  }}
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 >
-                  <FaBitcoin size={18} />
-                  <Text fontSize="sm" fontWeight="medium">Bitcoin</Text>
+                  <FaBitcoin size={16} />
+                  <Text fontSize="sm">Bitcoin</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="keepkey"
                   flex="1"
-                  gap={2}
+                  gap={3}
                   py={3}
                   px={4}
-                  color="gray.400"
-                  _selected={{ bg: "gray.700", color: "white" }}
-                  _hover={{ color: "white" }}
-                  transition="all 0.2s"
+                  color="gray.500"
+                  borderRadius="lg"
+                  fontWeight="500"
+                  _selected={{ 
+                    bg: "rgba(76, 175, 80, 0.15)", 
+                    color: "green.400",
+                    borderColor: "green.500",
+                    border: "1px solid",
+                    boxShadow: "0 0 20px rgba(76, 175, 80, 0.2)"
+                  }}
+                  _hover={{ 
+                    color: "gray.300",
+                    bg: "rgba(255, 255, 255, 0.05)" 
+                  }}
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 >
-                  <FaUsb size={18} />
-                  <Text fontSize="sm" fontWeight="medium">KeepKey</Text>
+                  <FaUsb size={16} />
+                  <Text fontSize="sm">KeepKey</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="logs"
                   flex="1"
-                  gap={2}
+                  gap={3}
                   py={3}
                   px={4}
-                  color="gray.400"
-                  _selected={{ bg: "gray.700", color: "white" }}
-                  _hover={{ color: "white" }}
-                  transition="all 0.2s"
+                  color="gray.500"
+                  borderRadius="lg"
+                  fontWeight="500"
+                  _selected={{ 
+                    bg: "rgba(76, 175, 80, 0.15)", 
+                    color: "green.400",
+                    borderColor: "green.500",
+                    border: "1px solid",
+                    boxShadow: "0 0 20px rgba(76, 175, 80, 0.2)"
+                  }}
+                  _hover={{ 
+                    color: "gray.300",
+                    bg: "rgba(255, 255, 255, 0.05)" 
+                  }}
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 >
-                  <LuFileText size={18} />
-                  <Text fontSize="sm" fontWeight="medium">Logs</Text>
+                  <LuFileText size={16} />
+                  <Text fontSize="sm">Logs</Text>
                 </Tabs.Trigger>
                 <Tabs.Trigger 
                   value="developer"
                   flex="1"
-                  gap={2}
+                  gap={3}
                   py={3}
                   px={4}
-                  color="gray.400"
-                  _selected={{ bg: "gray.700", color: "white" }}
-                  _hover={{ color: "white" }}
-                  transition="all 0.2s"
+                  color="gray.500"
+                  borderRadius="lg"
+                  fontWeight="500"
+                  _selected={{ 
+                    bg: "rgba(76, 175, 80, 0.15)", 
+                    color: "green.400",
+                    borderColor: "green.500",
+                    border: "1px solid",
+                    boxShadow: "0 0 20px rgba(76, 175, 80, 0.2)"
+                  }}
+                  _hover={{ 
+                    color: "gray.300",
+                    bg: "rgba(255, 255, 255, 0.05)" 
+                  }}
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 >
-                  <FaCog size={18} />
-                  <Text fontSize="sm" fontWeight="medium">Developer</Text>
+                  <FaCog size={16} />
+                  <Text fontSize="sm">Developer</Text>
                 </Tabs.Trigger>
               </Tabs.List>
 
               <Tabs.Content value="general" minHeight="400px" overflowY="auto">
-                <VStack align="stretch" gap={4}>
-                  <Text color="white" fontSize="lg" fontWeight="semibold">{t('settings:general.title')}</Text>
+                <VStack align="stretch" gap={6}>
+                  <HStack gap={2}>
+                    <Box w="4px" h="24px" bg="green.500" borderRadius="full" />
+                    <Text color="white" fontSize="xl" fontWeight="600" letterSpacing="tight">
+                      {t('settings:general.title')}
+                    </Text>
+                  </HStack>
                   
                   {/* Language Settings */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                  <Box 
+                    bg="rgba(255, 255, 255, 0.02)" 
+                    p={5} 
+                    borderRadius="xl" 
+                    border="1px solid" 
+                    borderColor="rgba(255, 255, 255, 0.06)"
+                    transition="all 0.3s"
+                    _hover={{
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      bg: "rgba(255, 255, 255, 0.03)"
+                    }}
+                  >
                     <VStack align="stretch" gap={3}>
                       <HStack gap={2}>
                         <FaGlobe color="green.400" />
@@ -697,7 +796,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                   </Box>
 
                   {/* Currency Settings */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                  <Box bg="rgba(255, 255, 255, 0.02)" p={5} borderRadius="xl" border="1px solid" borderColor="rgba(255, 255, 255, 0.06)" transition="all 0.3s" _hover={{ borderColor: "rgba(255, 255, 255, 0.1)", bg: "rgba(255, 255, 255, 0.03)" }}>
                     <VStack align="stretch" gap={3}>
                       <HStack gap={2}>
                         <FaDollarSign color="green.400" />
@@ -756,10 +855,13 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
 
               <Tabs.Content value="app" minHeight="400px" overflowY="auto">
                 <VStack align="stretch" gap={4}>
-                  <Text color="white" fontSize="lg" fontWeight="semibold">Application Settings</Text>
+                  <HStack gap={2}>
+                    <Box w="4px" h="24px" bg="green.500" borderRadius="full" />
+                    <Text color="white" fontSize="xl" fontWeight="600" letterSpacing="tight">Application Settings</Text>
+                  </HStack>
                   
                   {/* Pairings Section */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                  <Box bg="rgba(255, 255, 255, 0.02)" p={5} borderRadius="xl" border="1px solid" borderColor="rgba(255, 255, 255, 0.06)" transition="all 0.3s" _hover={{ borderColor: "rgba(255, 255, 255, 0.1)", bg: "rgba(255, 255, 255, 0.03)" }}>
                     <VStack align="stretch" gap={3}>
                       <HStack justify="space-between" align="center">
                         <VStack align="start" gap={1}>
@@ -805,7 +907,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
               <Tabs.Content value="logs" minHeight="400px">
                 <VStack align="stretch" gap={4}>
                   {/* Title centered */}
-                  <Text color="white" fontSize="lg" fontWeight="semibold" textAlign="center">
+                  <Text color="gray.400" fontSize="lg" fontWeight="500" textAlign="center" fontStyle="italic">
                     Device Communication Logs
                   </Text>
                   
@@ -862,7 +964,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                   </HStack>
 
                   {/* Log Controls */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                  <Box bg="rgba(255, 255, 255, 0.02)" p={5} borderRadius="xl" border="1px solid" borderColor="rgba(255, 255, 255, 0.06)" transition="all 0.3s" _hover={{ borderColor: "rgba(255, 255, 255, 0.1)", bg: "rgba(255, 255, 255, 0.03)" }}>
                     <VStack align="stretch" gap={3}>
                       <HStack gap={4} wrap="wrap">
                         <HStack flex="1" minW="200px">
@@ -1028,10 +1130,13 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
 
               <Tabs.Content value="developer" minHeight="400px" overflowY="auto">
                 <VStack align="stretch" gap={4}>
-                  <Text color="white" fontSize="lg" fontWeight="semibold">Developer Tools</Text>
+                  <HStack gap={2}>
+                    <Box w="4px" h="24px" bg="green.500" borderRadius="full" />
+                    <Text color="white" fontSize="xl" fontWeight="600" letterSpacing="tight">Developer Tools</Text>
+                  </HStack>
                   
                   {/* DevTools Section */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                  <Box bg="rgba(255, 255, 255, 0.02)" p={5} borderRadius="xl" border="1px solid" borderColor="rgba(255, 255, 255, 0.06)" transition="all 0.3s" _hover={{ borderColor: "rgba(255, 255, 255, 0.1)", bg: "rgba(255, 255, 255, 0.03)" }}>
                     <VStack align="stretch" gap={3}>
                       <VStack align="start" gap={1}>
                         <Text color="white" fontWeight="medium" fontSize="lg">Browser DevTools</Text>
@@ -1057,7 +1162,7 @@ export const SettingsDialog = ({ isOpen, onClose }: SettingsDialogProps) => {
                   </Box>
 
                   {/* Debug Info Section */}
-                  <Box bg="gray.800" p={4} borderRadius="md" border="1px solid" borderColor="gray.700">
+                  <Box bg="rgba(255, 255, 255, 0.02)" p={5} borderRadius="xl" border="1px solid" borderColor="rgba(255, 255, 255, 0.06)" transition="all 0.3s" _hover={{ borderColor: "rgba(255, 255, 255, 0.1)", bg: "rgba(255, 255, 255, 0.03)" }}>
                     <VStack align="stretch" gap={3}>
                       <VStack align="start" gap={1}>
                         <Text color="white" fontWeight="medium" fontSize="lg">Debug Information</Text>
